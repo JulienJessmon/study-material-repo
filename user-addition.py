@@ -32,7 +32,7 @@ def userdeatils_add():
         doc_ref = db.collection('userCollection').document()
         doc_ref.set(data)
 
-        print('DocumentID: ', doc_ref.id)
+        print('DocumentID: ', doc_ref.id) #purely for knowing it works, dont need it in the code 
     if flag == 0:
         print("make sure your password is more than 8 characters and has a capital letter, a number, a special character and no spaces in them")
         userdeatils_add()
