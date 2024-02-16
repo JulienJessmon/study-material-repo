@@ -23,9 +23,15 @@ side_img = CTkImage(dark_image=side_img_data, light_image=side_img_data, size=(3
 logo_img = CTkImage(dark_image=logo_img_data, light_image=logo_img_data, size=(50, 50))
 
 
-def next_page(current_page, next_page):
+def show_tabs(tab_name):
+    menu_tabs.pack(expand=True, fill='both')
+    main_menu.pack_forget()
+    menu_tabs.set(tab_name)
+
+
+def next_page(current_page, next_page_frame):
     current_page.pack_forget()
-    next_page.pack(expand=True, fill='both')
+    next_page_frame.pack(expand=True, fill='both')
 
 
 def set_text(text):  # function to set error text
@@ -47,8 +53,8 @@ def login():
             if username == us1 and password == ps1:
                 print("Logged in")
                 flag = 1
-                next_page(login_page,menu_frame)
-                menu_frame.pack(expand=True, fill='both')
+                next_page(login_page, main_menu)
+                main_menu.pack(expand=True, fill='both')
                 # exit(0)   exit the function if login is successful
 
         if flag == 0:
@@ -150,11 +156,59 @@ login_button = CTkButton(master=login_frame, text="Login", fg_color="#1f61a5", h
                          font=("Arial Bold", 12), text_color="#ffffff", width=225, command=login)
 login_button.pack(anchor="w", pady=(40, 0), padx=(25, 0))
 
-# Menu
-menu_frame = CTkFrame(master=window)
-menu_title_label = CTkLabel(master=menu_frame, text='Welcome', text_color='#1f61a5', anchor='w', justify='left',
-                            font=("Arial Bold", 24))
-menu_title_label.pack()
+# Main Menu
+main_menu = CTkFrame(master=window)
+
+# Buttons menu
+main_menu_title = CTkLabel(master=main_menu, text="Choose Tab", text_color='#1f61a5', anchor='w', justify='left',
+                           font=("Arial Bold", 24))
+main_menu_title.pack()
+
+buttons_menu = CTkFrame(master=main_menu)
+buttons_menu.pack(pady=20)
+
+notes_button = CTkButton(master=buttons_menu, text='Notes', command=lambda: show_tabs('Notes'))
+notes_button.pack(pady=20, padx=15)
+qb_button = CTkButton(master=buttons_menu, text='Question Banks', command=lambda: show_tabs('Question Banks'))
+qb_button.pack(pady=20, padx=15)
+qna_button = CTkButton(master=buttons_menu, text='Q & A', command=lambda: show_tabs('Q & A'))
+qna_button.pack(pady=20, padx=15)
+
+# Tabs
+menu_tabs = CTkTabview(master=window)
+
+notes_tab = menu_tabs.add('Notes')
+qb_tab = menu_tabs.add('Question Banks')
+qna_tab = menu_tabs.add('Q & A')
+
+# Notes tab
+note_dropdown_menu = CTkFrame(master=notes_tab, height=500, width=200)
+note_dropdown_menu.pack(side='left')
+
+courses = ['', 'B.Tech', 'Other']
+branches = ['', 'CSE', 'Other']
+years = ['', '1st year', '2nd year', '3rd year', '4th year']
+subjects = ['']
+modules = ['', '1', '2', '3', '4', '5']
+
+courses_box = CTkComboBox(master=note_dropdown_menu, values=courses).pack(pady=20, padx=10)
+branches_box = CTkComboBox(master=note_dropdown_menu, values=branches).pack(pady=20, padx=10)
+years_box = CTkComboBox(master=note_dropdown_menu, values=years).pack(pady=20, padx=10)
+subjects_box = CTkComboBox(master=note_dropdown_menu, values=subjects).pack(pady=20, padx=10)
+modules_box = CTkComboBox(master=note_dropdown_menu, values=modules).pack(pady=20, padx=10)
+
+search_button = CTkButton(master=note_dropdown_menu, text='Search').pack(pady=20)
+
+# qb tab
+qb_dropdown_menu = CTkFrame(master=qb_tab, height=500, width=200)
+qb_dropdown_menu.pack(side='left')
+qb_courses_box = CTkComboBox(master=qb_dropdown_menu, values=courses).pack(pady=20, padx=10)
+qb_branches_box = CTkComboBox(master=qb_dropdown_menu, values=branches).pack(pady=20, padx=10)
+qb_years_box = CTkComboBox(master=qb_dropdown_menu, values=years).pack(pady=20, padx=10)
+qb_subjects_box = CTkComboBox(master=qb_dropdown_menu, values=subjects).pack(pady=20, padx=10)
+qb_modules_box = CTkComboBox(master=qb_dropdown_menu, values=modules).pack(pady=20, padx=10)
+
+qb_search_button = CTkButton(master=qb_dropdown_menu, text='Search').pack(pady=20)
 
 # run
 window.mainloop()
