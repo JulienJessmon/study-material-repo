@@ -153,7 +153,7 @@ error_label = CTkLabel(master=login_frame, text="", text_color="#FF0000")
 error_label.pack(anchor="w", padx=(25, 0))
 
 login_button = CTkButton(master=login_frame, text="Login", fg_color="#1f61a5", hover_color="#19429d",
-                         font=("Arial Bold", 12), text_color="#ffffff", width=225, command=login)
+                         font=("Arial Bold", 12), text_color="#ffffff", width=225, command=lambda: login())
 login_button.pack(anchor="w", pady=(40, 0), padx=(25, 0))
 
 # Main Menu
