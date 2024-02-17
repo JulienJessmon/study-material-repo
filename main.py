@@ -1,14 +1,13 @@
-# import required modules
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+import base64
+import tkinter as tk
 
-from customtkinter import *
+import firebase_admin
 from PIL import Image
+from customtkinter import *
+from firebase_admin import credentials, firestore
 
 cred = credentials.Certificate(
-    r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")
-# your path will be different based on where you store your private key
+    r"D:\Desktop\Python\study-mat-repo\study-material-repo-firebase-adminsdk-bj0om-72965ed62f.json")  # your path will be different based on where you store your private key
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -21,91 +20,6 @@ user_img = CTkImage(dark_image=user_img_data, light_image=user_img_data, size=(1
 password_img = CTkImage(dark_image=password_img_data, light_image=password_img_data, size=(17, 17))
 side_img = CTkImage(dark_image=side_img_data, light_image=side_img_data, size=(300, 300))
 logo_img = CTkImage(dark_image=logo_img_data, light_image=logo_img_data, size=(50, 50))
-
-
-def show_tabs(tab_name):
-    menu_tabs.pack(expand=True, fill='both')
-    main_menu.pack_forget()
-    menu_tabs.set(tab_name)
-
-
-def next_page(current_page, next_page_frame):
-    current_page.pack_forget()
-    next_page_frame.pack(expand=True, fill='both')
-
-
-def set_text(text):  # function to set error text
-    error_label.configure(text=text)
-
-
-def login():
-    username = id_entry.get()
-    password = password_entry.get()
-    if username != "" and password != "":
-        docs = db.collection('userCollection').stream()
-        document_list = [doc for doc in docs]
-        flag = 0
-        for doc in document_list:
-            doc_data = doc.to_dict()
-            us1 = doc_data.get('Username')
-            ps1 = doc_data.get('Password')
-
-            if username == us1 and password == ps1:
-                print("Logged in")
-                flag = 1
-                next_page(login_page, main_menu)
-                main_menu.pack(expand=True, fill='both')
-                # exit(0)   exit the function if login is successful
-
-        if flag == 0:
-            print("Wrong username or password, try again")
-            id_entry.delete(0, END)
-            password_entry.delete(0, END)
-            set_text("Wrong username or password, try again")
-            login()
-
-
-def user_details_add():  # function to add user
-    flag = 0
-    username = id_entry.get()
-    password = password_entry.get()
-    if username != "" and password != "":
-        if (password.islower() is False) and (password.isalnum() is False) and (password.isspace() is False) and (
-                len(password) >= 8):
-            has_number = False
-            for char in password:
-                if not char.isnumeric():
-                    has_number = True
-                    break
-            if has_number is True:
-                flag = 1
-            elif has_number is False:
-                set_text(
-                    "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
-                    "number are required")
-                id_entry.delete(0, END)
-                password_entry.delete(0, END)
-                user_details_add()
-        if flag == 1:
-            data = {
-                'Username': username,
-                'Password': password
-            }
-
-            doc_ref = db.collection('userCollection').document()
-            doc_ref.set(data)
-
-            print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
-        if flag == 0:
-            set_text(
-                "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
-                "number are required")
-            id_entry.delete(0, END)
-            password_entry.delete(0, END)
-            user_details_add()
-    id_entry.delete(0, END)
-    password_entry.delete(0, END)
-
 
 # GUI Code
 # window
@@ -212,3 +126,137 @@ qb_search_button = CTkButton(master=qb_dropdown_menu, text='Search').pack(pady=2
 
 # run
 window.mainloop()
+
+def user_details_add():
+    flag = 0
+    username = id_entry.get()
+    password = password_entry.get()
+    if username != "" and password != "":
+        if (password.islower() is False) and (password.isalnum() is False) and (password.isspace() is False) and (
+                len(password) >= 8):
+            has_number = False
+            for char in password:
+                if not char.isnumeric():
+                    has_number = True
+                    break
+            if has_number is True:
+                flag = 1
+            elif has_number is False:
+                set_text(
+                    "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
+                    "number are required")
+                id_entry.delete(0, END)
+                password_entry.delete(0, END)
+                user_details_add()
+        if flag == 1:
+            data = {
+                'Username': username,
+                'Password': password
+            }
+
+            doc_ref = db.collection('userCollection').document()
+            doc_ref.set(data)
+
+            print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
+        if flag == 0:
+            set_text(
+                "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
+                "number are required")
+            id_entry.delete(0, END)
+            password_entry.delete(0, END)
+            user_details_add()
+    id_entry.delete(0, END)
+    password_entry.delete(0, END)
+
+
+def login():
+    username = id_entry.get()
+    password = password_entry.get()
+    if username != "" and password != "":
+        docs = db.collection('userCollection').stream()
+        document_list = [doc for doc in docs]
+        flag = 0
+        for doc in document_list:
+            doc_data = doc.to_dict()
+            us1 = doc_data.get('Username')
+            ps1 = doc_data.get('Password')
+
+            if username == us1 and password == ps1:
+                print("Logged in")
+                flag = 1
+                next_page(login_page, main_menu)
+                main_menu.pack(expand=True, fill='both')
+                # exit(0)   exit the function if login is successful
+
+        if flag == 0:
+            print("Wrong username or password, try again")
+            id_entry.delete(0, END)
+            password_entry.delete(0, END)
+            set_text("Wrong username or password, try again")
+            login()
+
+def select_pdf_file():
+    root = tk.Tk()
+    root.withdraw()
+    file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
+    return file_path
+
+def upload_pdf_using_dialog(filename, description):
+    pdf_path = select_pdf_file()
+    if pdf_path:
+        with open(pdf_path, "rb") as f:
+            pdf_data = f.read()
+            pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+
+        db.collection("pdfs").add({
+            "filename": filename,
+            "description": description,
+            "pdf_data": pdf_base64
+        })
+
+
+def select_destination_folder():
+    root = tk.Tk()
+    root.withdraw()
+    folder_path = filedialog.askdirectory()
+    return folder_path
+
+
+def download_pdf(pdf_id):
+    destination_folder = select_destination_folder()
+    if not destination_folder:
+        print("No destination folder selected.")
+        return
+
+    doc_ref = db.collection("pdfs").document(pdf_id)
+    doc = doc_ref.get()
+    if doc.exists:
+        pdf_data_base64 = doc.to_dict()["pdf_data"]
+        pdf_data = base64.b64decode(pdf_data_base64)
+
+        file_path = os.path.join(destination_folder, "downloaded_pdf.pdf")
+
+        with open(file_path, "wb") as f:
+            f.write(pdf_data)
+
+        print(f"PDF downloaded successfully to: {file_path}")
+    else:
+        print("No such document!")
+
+
+#  pdfs_id = "ZnceNJGoYhUflbKxMrpX"
+#  download_pdf(pdfs_id)  this is how it works btw
+
+def show_tabs(tab_name):
+    menu_tabs.pack(expand=True, fill='both')
+    main_menu.pack_forget()
+    menu_tabs.set(tab_name)
+
+
+def next_page(current_page, next_page_frame):
+    current_page.pack_forget()
+    next_page_frame.pack(expand=True, fill='both')
+
+
+def set_text(text):  # function to set error text
+    error_label.configure(text=text)
