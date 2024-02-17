@@ -102,11 +102,23 @@ def upload_pdf_using_dialog(filename, description):
         with open(pdf_path, "rb") as f:
             pdf_data = f.read()
             pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+        course = input("Course: ")  # make it so that the input comes from the filter, not written inputs
+        branch = input("Branch: ")
+        year = int(input("Year: "))
+        subject = input("Subject: ")
+        module = int(input("Module: "))
+        user_type = input("User Type: ")  # should be auto added based on who uploads don't give it as an option to add, just to filter
 
         db.collection("pdfs").add({
             "filename": filename,
             "description": description,
-            "pdf_data": pdf_base64
+            "pdf_data": pdf_base64,
+            "course": course,
+            "branch": branch,
+            "year": year,
+            "subject": subject,
+            "module": module,
+            "user_type": user_type
         })
 
 
