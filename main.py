@@ -1,7 +1,7 @@
-import base64
 import tkinter as tk
-
 import firebase_admin
+import pyrebase
+import requests
 from PIL import Image
 from customtkinter import *
 from firebase_admin import credentials, firestore
@@ -11,6 +11,20 @@ cred = credentials.Certificate(
 # your path will be different based on where you store your private key
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+config = {
+    "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
+    "authDomain": "study-material-repo.firebaseapp.com",
+    "projectId": "study-material-repo",
+    "storageBucket": "study-material-repo.appspot.com",
+    "messagingSenderId": "291006521607",
+    "appId": "1:291006521607:web:7196317a36dcf6f0e365a2",
+    "measurementId": "G-6EGQ548K06",
+    "databaseURL": ""
+}
+
+firebase = pyrebase.initialize_app(config)
+storage = firebase.storage()
 
 CSE_subjects = {
     '1st year': ['PHT 100', 'PHT 110', 'MAT 101', 'EST 100', 'EST 120', 'HUT 101', 'CYT 100', 'EST 110', 'MAT 102',
@@ -38,44 +52,25 @@ upload_img = CTkImage(dark_image=upload_img_data, light_image=upload_img_data, s
 
 
 def select_pdf_file():
-    root = tk.Tk()
-    root.withdraw()
     file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     return file_path
 
 
 def upload_pdf_using_dialog():
-    filename = notes_upload_filename_entry.get()
-    description = notes_upload_description_box.get("0.0", "end")
-    course = notes_upload_course_box.get()  # make it so that the input comes from the filter, not written inputs
-    branch = notes_upload_branch_box.get()
-    year = notes_upload_year_box.get()
-    subject = notes_upload_subject_box.get()
-    module = notes_upload_module_box.get()
-    user_type = input("User Type: ")  # should be auto added based on who uploads don't give it as an option to add,
-    # just to filter
-    if all([filename, description, course, branch, year, subject, module, user_type]):
+    file_name = notes_upload_filename_entry.get()
+    if file_name != '':
         pdf_path = select_pdf_file()
         if pdf_path:
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
-                pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
-            db.collection("pdfs").add({
-                "filename": filename,
-                "description": description,
-                "pdf_data": pdf_base64,
-                "course": course,
-                "branch": branch,
-                "year": year,
-                "subject": subject,
-                "module": module,
-                "user_type": user_type
-            })
-            notes_upload_error_label.configure(text="Upload Successful")
+                storage.child("pdfs/" + file_name).put(pdf_data)
+                print("PDF uploaded successfully!")
+                notes_upload_error_label.configure(text='PDF uploaded successfully!')
     else:
-        notes_upload_error_label.configure(text="Please select all fields")
-        print("Select all fields")
+        notes_upload_error_label.configure(text='Set file name')
 
+
+# upload_pdf()
 
 def select_destination_folder():
     root = tk.Tk()
@@ -85,29 +80,24 @@ def select_destination_folder():
 
 
 def download_pdf(pdf_id):
-    destination_folder = select_destination_folder()
-    if not destination_folder:
-        print("No destination folder selected.")
-        return
+    pdf_ref = storage.child("pdfs/" + pdf_id)
 
-    doc_ref = db.collection("pdfs").document(pdf_id)
-    doc = doc_ref.get()
-    if doc.exists:
-        pdf_data_base64 = doc.to_dict()["pdf_data"]
-        pdf_data = base64.b64decode(pdf_data_base64)
-
-        file_path = os.path.join(destination_folder, "downloaded_pdf.pdf")
+    try:
+        url = pdf_ref.get_url(None)
+        response = requests.get(url)
+        response.raise_for_status()
+        file_path = os.path.join(select_destination_folder(), pdf_id + ".pdf")
 
         with open(file_path, "wb") as f:
-            f.write(pdf_data)
+            f.write(response.content)
 
-        print(f"PDF downloaded successfully to: {file_path}")
-    else:
-        print("No such document!")
+        print("PDF downloaded successfully to:", file_path)
+    except requests.exceptions.RequestException as e:
+        print("Error downloading PDF:", e)
 
 
-#  pdfs_id = "ZnceNJGoYhUflbKxMrpX"
-#  download_pdf(pdfs_id)
+# pdf_id = "1"
+# download_pdf(pdf_id)
 
 def show_tabs(tab_name):
     menu_tabs.pack(expand=True, fill='both')
@@ -262,7 +252,6 @@ login_button.pack(anchor="w", pady=(40, 0), padx=(25, 0))
 
 # Main Menu
 main_menu = CTkFrame(master=window)
-main_menu.pack(expand=True, fill='both')
 
 # Buttons menu
 main_menu_title = CTkLabel(master=main_menu, text="Choose Tab")
