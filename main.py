@@ -7,7 +7,7 @@ from customtkinter import *
 from firebase_admin import credentials, firestore
 
 cred = credentials.Certificate(
-    r"D:\Desktop\Python\study-mat-repo\study-material-repo-firebase-adminsdk-bj0om-72965ed62f.json")  #
+    r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")  #
 # your path will be different based on where you store your private key
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -58,21 +58,27 @@ def select_pdf_file():
 
 def upload_pdf_using_dialog():
     file_name = notes_upload_filename_entry.get()
-    if file_name != '':
+    course = notes_upload_course_box.get()
+    branch = notes_upload_branch_box.get()
+    year = notes_upload_year_box.get()
+    subject = notes_upload_subject_box.get()
+    module = notes_upload_module_box.get()
+    if all({file_name, course, branch, year, subject, module}):
         pdf_path = select_pdf_file()
         if pdf_path:
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
-                course = notes_upload_course_box.get()
-                branch = notes_upload_branch_box.get()
-                year = notes_upload_year_box.get()
-                subject = notes_upload_subject_box.get()
-                module = notes_upload_module_box.get()
                 storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
                 print("PDF uploaded successfully!")
                 notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                notes_upload_filename_entry.delete(0, END)
+                notes_upload_course_box.set("")
+                notes_upload_branch_box.set("")
+                notes_upload_year_box.set("")
+                notes_upload_subject_box.set("")
+                notes_upload_module_box.set("")
     else:
-        notes_upload_error_label.configure(text='Set file name')
+        notes_upload_error_label.configure(text='Fill all fields!')
 
 
 def select_destination_folder():
@@ -190,6 +196,7 @@ def show_filter_subjects(self):
         table.append(item)
     notes_search_subject_box.configure(values=table)
     notes_search_subject_box.set("")
+    notes_search_module_box.set("")
 
 
 def show_upload_subjects(self):
@@ -199,6 +206,16 @@ def show_upload_subjects(self):
         table.append(item)
     notes_upload_subject_box.configure(values=table)
     notes_upload_subject_box.set("")
+    notes_upload_module_box.set("")
+
+
+def toggle_password():
+    if password_entry.cget('show') == '':
+        password_entry.configure(show='*')
+        show_password_box.configure(text='Show Password')
+    else:
+        password_entry.configure(show='')
+        show_password_box.configure(text='Hide Password')
 
 
 # GUI Code
@@ -231,24 +248,25 @@ title_label.pack(anchor="w", pady=(50, 5), padx=(25, 0))
 
 id_label = CTkLabel(master=login_frame, text='  User ID', text_color="#1f61a5", anchor="w", justify="left",
                     font=("Arial Bold", 14), image=user_img, compound="left")
-id_label.pack(anchor="w", pady=(38, 0), padx=(25, 0))
+id_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 id_entry = CTkEntry(master=login_frame, width=225, fg_color="#EEEEEE", border_color="#1f61a5", border_width=1,
                     text_color="#000000")
 id_entry.pack(anchor="w", padx=(25, 0))
 
 password_label = CTkLabel(master=login_frame, text='  Password', text_color="#1f61a5", anchor="w", justify="left",
                           font=("Arial Bold", 14), image=password_img, compound="left")
-password_label.pack(anchor="w", pady=(38, 0), padx=(25, 0))
+password_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 password_entry = CTkEntry(master=login_frame, show='*', width=225, fg_color="#EEEEEE", border_color="#1f61a5",
                           border_width=1, text_color="#000000")
 password_entry.pack(anchor="w", padx=(25, 0))
-
+show_password_box = CTkCheckBox(master=login_frame, text="Show Password", command=lambda: toggle_password())
+show_password_box.pack(anchor="w", padx=(25, 0), pady=10)
 error_label = CTkLabel(master=login_frame, text="", text_color="#FF0000")
 error_label.pack(anchor="w", padx=(25, 0))
 
 login_button = CTkButton(master=login_frame, text="Login", fg_color="#1f61a5", hover_color="#19429d",
                          font=("Arial Bold", 12), text_color="#ffffff", width=225, command=lambda: login())
-login_button.pack(anchor="w", pady=(40, 0), padx=(25, 0))
+login_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 
 # Main Menu
 main_menu = CTkFrame(master=window)
@@ -331,10 +349,6 @@ notes_upload_filename_label = CTkLabel(master=notes_upload_menu_frame, text='Fil
 notes_upload_filename_label.pack()
 notes_upload_filename_entry = CTkEntry(master=notes_upload_menu_frame)
 notes_upload_filename_entry.pack()
-notes_upload_description_label = CTkLabel(master=notes_upload_menu_frame, text='Description', width=200)
-notes_upload_description_label.pack()
-notes_upload_description_box = CTkTextbox(master=notes_upload_menu_frame, height=100)
-notes_upload_description_box.pack()
 notes_upload_course_label = CTkLabel(master=notes_upload_menu_frame, text='Course', width=200)
 notes_upload_course_label.pack(padx=10)
 notes_upload_course_box = CTkComboBox(master=notes_upload_menu_frame, state='readonly', values=upload_course_table)
