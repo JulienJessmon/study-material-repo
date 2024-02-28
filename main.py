@@ -7,7 +7,7 @@ from customtkinter import *
 from firebase_admin import credentials, firestore
 
 cred = credentials.Certificate(
-    r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")  #
+    r"D:\Desktop\Python\study-mat-repo\study-material-repo-firebase-adminsdk-bj0om-72965ed62f.json")  #
 # your path will be different based on where you store your private key
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -63,14 +63,17 @@ def upload_pdf_using_dialog():
         if pdf_path:
             with open(pdf_path, "rb") as f:
                 pdf_data = f.read()
-                storage.child("pdfs/" + file_name).put(pdf_data)
+                course = notes_upload_course_box.get()
+                branch = notes_upload_branch_box.get()
+                year = notes_upload_year_box.get()
+                subject = notes_upload_subject_box.get()
+                module = notes_upload_module_box.get()
+                storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
                 print("PDF uploaded successfully!")
                 notes_upload_error_label.configure(text='PDF uploaded successfully!')
     else:
         notes_upload_error_label.configure(text='Set file name')
 
-
-# upload_pdf()
 
 def select_destination_folder():
     root = tk.Tk()
@@ -79,8 +82,8 @@ def select_destination_folder():
     return folder_path
 
 
-def download_pdf(pdf_id):
-    pdf_ref = storage.child("pdfs/" + pdf_id)
+"""def download_pdf(pdf_id):
+    pdf_ref = storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/{filename}" + pdf_id)
 
     try:
         url = pdf_ref.get_url(None)
@@ -93,11 +96,8 @@ def download_pdf(pdf_id):
 
         print("PDF downloaded successfully to:", file_path)
     except requests.exceptions.RequestException as e:
-        print("Error downloading PDF:", e)
+        print("Error downloading PDF:", e)"""
 
-
-# pdf_id = "1"
-# download_pdf(pdf_id)
 
 def show_tabs(tab_name):
     menu_tabs.pack(expand=True, fill='both')
