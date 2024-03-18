@@ -4,14 +4,23 @@ import pyrebase
 import requests
 from PIL import Image
 from customtkinter import *
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, storage
 
 cred = credentials.Certificate(
     r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")  #
 # your path will be different based on where you store your private key
-firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
+    "authDomain": "study-material-repo.firebaseapp.com",
+    "projectId": "study-material-repo",
+    'storageBucket': "study-material-repo.appspot.com",
+    "messagingSenderId": "291006521607",
+    "appId": "1:291006521607:web:7196317a36dcf6f0e365a2",
+    "measurementId": "G-6EGQ548K06",
+    "databaseURL": ""
+})
 db = firestore.client()
-
+bucket = storage.bucket()
 config = {
     "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
     "authDomain": "study-material-repo.firebaseapp.com",
@@ -42,6 +51,8 @@ side_img_data = Image.open('Images/bg.png')
 logo_img_data = Image.open('Images/logo.png')
 search_img_data = Image.open('Images/search.png')
 upload_img_data = Image.open('Images/upload.png')
+upvote_img_data = Image.open('Images/upvote.png')
+download_img_data = Image.open('Images/download.png')
 
 user_img = CTkImage(dark_image=user_img_data, light_image=user_img_data, size=(17, 17))
 password_img = CTkImage(dark_image=password_img_data, light_image=password_img_data, size=(17, 17))
@@ -49,6 +60,11 @@ side_img = CTkImage(dark_image=side_img_data, light_image=side_img_data, size=(3
 logo_img = CTkImage(dark_image=logo_img_data, light_image=logo_img_data, size=(50, 50))
 search_img = CTkImage(dark_image=search_img_data, light_image=search_img_data, size=(17, 17))
 upload_img = CTkImage(dark_image=upload_img_data, light_image=upload_img_data, size=(17, 17))
+upvote_img = CTkImage(dark_image=upvote_img_data, light_image=upvote_img_data, size=(17, 17))
+download_img = CTkImage(dark_image=download_img_data, light_image=download_img_data, size=(17, 17))
+
+current_search_dir = ''
+file_names = []
 
 
 def select_pdf_file():
@@ -88,7 +104,7 @@ def select_destination_folder():
     return folder_path
 
 
-"""def download_pdf(pdf_id):
+"""def download_pdf(filename, pdf_id):
     pdf_ref = storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/{filename}" + pdf_id)
 
     try:
@@ -218,9 +234,52 @@ def toggle_password():
         show_password_box.configure(text='Hide Password')
 
 
+#Display Frame content
+
+def display_note_menu():
+    for frame in notes_display_frame.winfo_children():
+        frame.destroy()
+    for name in file_names:
+        display_name = name.replace(current_search_dir+"/", "")
+        frame = CTkFrame(master=notes_display_frame, height=100, fg_color='#e4e5f1', border_width=1)
+        frame.pack(fill='x', pady=5)
+        note_display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+                                      text_color='#1f61a5')
+        note_display_title.pack(side=LEFT, pady=5, padx=5)
+        note_display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img, command=lambda n=name: print(n))
+        note_display_download_button.pack(side=RIGHT, pady=5, padx=5)
+        note_display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',fg_color='#D30000', hover_color='#7C0A02', image=upvote_img)
+        note_display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+
+def list_files_in_folder(folder_path):
+    folder = bucket.list_blobs(prefix=folder_path)
+    file_names = [blob.name for blob in folder if blob.name.endswith('/') == False]
+    return file_names
+
+
+def search_subjects():
+    course = notes_search_course_box.get()
+    branch = notes_search_branch_box.get()
+    year = notes_search_year_box.get()
+    subject = notes_search_subject_box.get()
+    module = notes_search_module_box.get()
+    if all({course, branch, year, subject, module}):
+        folder_path = f"pdfs/{course}/{branch}/{year}/{subject}/{module}"
+        global current_search_dir
+        current_search_dir = folder_path
+        notes_search_error_label.configure(text='')
+        print(current_search_dir)
+        global file_names
+        file_names = list_files_in_folder(current_search_dir)
+        display_note_menu()
+    else:
+        notes_search_error_label.configure(text='Set all fields!')
+
+
+
 # GUI Code
 # window
-window = CTk()
+window = CTk(fg_color='#fafafa')
 window.title('Study Material Repository')
 window.geometry('800x500')
 window.minsize(800, 500)
@@ -259,7 +318,7 @@ password_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 password_entry = CTkEntry(master=login_frame, show='*', width=225, fg_color="#EEEEEE", border_color="#1f61a5",
                           border_width=1, text_color="#000000")
 password_entry.pack(anchor="w", padx=(25, 0))
-show_password_box = CTkCheckBox(master=login_frame, text="Show Password", command=lambda: toggle_password())
+show_password_box = CTkCheckBox(master=login_frame, text="Show Password",border_width=1, checkbox_width=20, checkbox_height=20, command=lambda: toggle_password())
 show_password_box.pack(anchor="w", padx=(25, 0), pady=10)
 error_label = CTkLabel(master=login_frame, text="", text_color="#FF0000")
 error_label.pack(anchor="w", padx=(25, 0))
@@ -286,7 +345,7 @@ qna_button = CTkButton(master=buttons_menu, text='Q & A', command=lambda: show_t
 qna_button.pack(pady=20, padx=15)
 
 # Tabs
-menu_tabs = CTkTabview(master=window)
+menu_tabs = CTkTabview(master=window, fg_color='#fafafa', segmented_button_fg_color='#fafafa')
 
 notes_tab = menu_tabs.add('Notes')
 qb_tab = menu_tabs.add('Question Banks')
@@ -294,11 +353,11 @@ qna_tab = menu_tabs.add('Q & A')
 
 # Notes tab
 
-notes_filter_menu_frame = CTkFrame(master=notes_tab, border_width=2, width=200)
+notes_filter_menu_frame = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
 notes_filter_menu_frame.pack(side='left', fill='y')
-notes_upload_menu_frame = CTkScrollableFrame(master=notes_tab, border_width=2, width=200)
+notes_upload_menu_frame = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
 notes_upload_menu_frame.pack(side='right', fill='y')
-notes_display_frame = CTkScrollableFrame(master=notes_tab, border_width=2)
+notes_display_frame = CTkScrollableFrame(master=notes_tab, fg_color='#fafafa', scrollbar_button_color='#d2d3db')
 notes_display_frame.pack(side='left', expand=True, fill='both')
 
 filter_course_table = ['B.Tech']
@@ -312,26 +371,31 @@ notes_filter_menu_title = CTkLabel(master=notes_filter_menu_frame, text='Filter'
 notes_filter_menu_title.pack(padx=10)
 notes_search_course_label = CTkLabel(master=notes_filter_menu_frame, text='Course', width=200)
 notes_search_course_label.pack(padx=10)
-notes_search_course_box = CTkComboBox(master=notes_filter_menu_frame, values=filter_course_table, state='readonly')
+notes_search_course_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
+                          border_width=1, values=filter_course_table, state='readonly')
 notes_search_course_box.pack(padx=10)
 notes_search_branch_label = CTkLabel(master=notes_filter_menu_frame, text='Branch', width=200)
 notes_search_branch_label.pack(padx=10)
-notes_search_branch_box = CTkComboBox(master=notes_filter_menu_frame, values=filter_branch_table, state='readonly')
+notes_search_branch_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
+                          border_width=1, values=filter_branch_table, state='readonly')
 notes_search_branch_box.pack(padx=10)
 notes_search_year_label = CTkLabel(master=notes_filter_menu_frame, text='Year', width=200)
 notes_search_year_label.pack(padx=10)
-notes_search_year_box = CTkComboBox(master=notes_filter_menu_frame, values=filter_year_table, state='readonly',
+notes_search_year_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
+                          border_width=1, values=filter_year_table, state='readonly',
                                     command=show_filter_subjects)
 notes_search_year_box.pack(padx=10)
 notes_search_subject_label = CTkLabel(master=notes_filter_menu_frame, text='Subject', width=200)
 notes_search_subject_label.pack(padx=10)
-notes_search_subject_box = CTkComboBox(master=notes_filter_menu_frame, values=filter_subject_table, state='readonly')
+notes_search_subject_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
+                          border_width=1, values=filter_subject_table, state='readonly')
 notes_search_subject_box.pack(padx=10)
 notes_search_module_label = CTkLabel(master=notes_filter_menu_frame, text='Module', width=200)
 notes_search_module_label.pack(padx=10)
-notes_search_module_box = CTkComboBox(master=notes_filter_menu_frame, values=filter_module_table, state='readonly')
+notes_search_module_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
+                          border_width=1, values=filter_module_table, state='readonly')
 notes_search_module_box.pack(padx=10)
-notes_search_button = CTkButton(master=notes_filter_menu_frame, text='  Search', image=search_img)
+notes_search_button = CTkButton(master=notes_filter_menu_frame, text='  Search', image=search_img, command=lambda: search_subjects())
 notes_search_button.pack(pady=10)
 notes_search_error_label = CTkLabel(master=notes_filter_menu_frame, text='', text_color="#FF0000")
 notes_search_error_label.pack()
@@ -347,33 +411,40 @@ notes_upload_menu_title = CTkLabel(master=notes_upload_menu_frame, text='Upload'
 notes_upload_menu_title.pack(padx=10)
 notes_upload_filename_label = CTkLabel(master=notes_upload_menu_frame, text='File name', width=200)
 notes_upload_filename_label.pack()
-notes_upload_filename_entry = CTkEntry(master=notes_upload_menu_frame)
+notes_upload_filename_entry = CTkEntry(master=notes_upload_menu_frame, border_color="#1f61a5",
+                          border_width=1,)
 notes_upload_filename_entry.pack()
 notes_upload_course_label = CTkLabel(master=notes_upload_menu_frame, text='Course', width=200)
 notes_upload_course_label.pack(padx=10)
-notes_upload_course_box = CTkComboBox(master=notes_upload_menu_frame, state='readonly', values=upload_course_table)
+notes_upload_course_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
+                          border_width=1, state='readonly', values=upload_course_table)
 notes_upload_course_box.pack(padx=10)
 notes_upload_branch_label = CTkLabel(master=notes_upload_menu_frame, text='Branch', width=200)
 notes_upload_branch_label.pack(padx=10)
-notes_upload_branch_box = CTkComboBox(master=notes_upload_menu_frame, state='readonly', values=upload_branch_table)
+notes_upload_branch_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
+                          border_width=1, state='readonly', values=upload_branch_table)
 notes_upload_branch_box.pack(padx=10)
 notes_upload_year_label = CTkLabel(master=notes_upload_menu_frame, text='Year', width=200)
 notes_upload_year_label.pack(padx=10)
-notes_upload_year_box = CTkComboBox(master=notes_upload_menu_frame, values=upload_year_table, state='readonly',
+notes_upload_year_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
+                          border_width=1, values=upload_year_table, state='readonly',
                                     command=show_upload_subjects)
 notes_upload_year_box.pack(padx=10)
 notes_upload_subject_label = CTkLabel(master=notes_upload_menu_frame, text='Subject', width=200)
 notes_upload_subject_label.pack(padx=10)
-notes_upload_subject_box = CTkComboBox(master=notes_upload_menu_frame, state='readonly', values=upload_subject_table)
+notes_upload_subject_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
+                          border_width=1, state='readonly', values=upload_subject_table)
 notes_upload_subject_box.pack(padx=10)
 notes_upload_module_label = CTkLabel(master=notes_upload_menu_frame, text='Module', width=200)
 notes_upload_module_label.pack(padx=10)
-notes_upload_module_box = CTkComboBox(master=notes_upload_menu_frame, state='readonly', values=upload_module_table)
+notes_upload_module_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
+                          border_width=1, state='readonly', values=upload_module_table)
 notes_upload_module_box.pack(padx=10)
 notes_upload_button = CTkButton(master=notes_upload_menu_frame, text='  Upload', image=upload_img,
                                 command=lambda: upload_pdf_using_dialog())
 notes_upload_button.pack(pady=10)
 notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', text_color="#FF0000")
 notes_upload_error_label.pack()
+
 # run
 window.mainloop()
