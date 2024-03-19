@@ -51,8 +51,8 @@ side_img_data = Image.open('Images/bg.png')
 logo_img_data = Image.open('Images/logo.png')
 search_img_data = Image.open('Images/search.png')
 upload_img_data = Image.open('Images/upload.png')
-upvote_img_data = Image.open('Images/upvote.png')
-download_img_data = Image.open('Images/download.png')
+upvote_img_data = Image.open('Images/upload.png')
+download_img_data = Image.open('Images/upload.png')
 
 user_img = CTkImage(dark_image=user_img_data, light_image=user_img_data, size=(17, 17))
 password_img = CTkImage(dark_image=password_img_data, light_image=password_img_data, size=(17, 17))
@@ -95,7 +95,12 @@ def upload_pdf_using_dialog():
                 notes_upload_module_box.set("")
     else:
         notes_upload_error_label.configure(text='Fill all fields!')
-
+    db.collection("pdfData").add({
+        "filename": file_name,
+        "upvotes": 0,
+        "uploadedBy": loggedInUser,
+        "downloads": 0
+    })
 
 def select_destination_folder():
     root = tk.Tk()
@@ -150,6 +155,8 @@ def login():
 
             if username == us1 and password == ps1:
                 print("Logged in")
+                global loggedInUser
+                loggedInUser = username
                 flag = 1
                 next_page(login_page, main_menu)
                 main_menu.pack(expand=True, fill='both')
