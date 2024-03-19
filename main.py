@@ -7,7 +7,7 @@ from customtkinter import *
 from firebase_admin import credentials, firestore, storage
 
 cred = credentials.Certificate(
-    r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")  #
+    r"D:\Desktop\Python\study-mat-repo\study-material-repo-firebase-adminsdk-bj0om-72965ed62f.json")
 # your path will be different based on where you store your private key
 firebase_admin.initialize_app(cred, {
     "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
@@ -104,21 +104,21 @@ def select_destination_folder():
     return folder_path
 
 
-"""def download_pdf(filename, pdf_id):
-    pdf_ref = storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/{filename}" + pdf_id)
+def download_pdf(filename):
+    pdf_ref = storage.child(f"{filename}")
 
     try:
         url = pdf_ref.get_url(None)
         response = requests.get(url)
         response.raise_for_status()
-        file_path = os.path.join(select_destination_folder(), pdf_id + ".pdf")
+        file_path = os.path.join(select_destination_folder() + ".pdf")
 
         with open(file_path, "wb") as f:
             f.write(response.content)
 
         print("PDF downloaded successfully to:", file_path)
     except requests.exceptions.RequestException as e:
-        print("Error downloading PDF:", e)"""
+        print("Error downloading PDF:", e)
 
 
 def show_tabs(tab_name):
@@ -234,22 +234,25 @@ def toggle_password():
         show_password_box.configure(text='Hide Password')
 
 
-#Display Frame content
+# Display Frame content
 
 def display_note_menu():
     for frame in notes_display_frame.winfo_children():
         frame.destroy()
     for name in file_names:
-        display_name = name.replace(current_search_dir+"/", "")
+        display_name = name.replace(current_search_dir + "/", "")
         frame = CTkFrame(master=notes_display_frame, height=100, fg_color='#e4e5f1', border_width=1)
         frame.pack(fill='x', pady=5)
         note_display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                       text_color='#1f61a5')
         note_display_title.pack(side=LEFT, pady=5, padx=5)
-        note_display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img, command=lambda n=name: print(n))
+        note_display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+                                                 command=lambda n=name: download_pdf(n))
         note_display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        note_display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',fg_color='#D30000', hover_color='#7C0A02', image=upvote_img)
+        note_display_upvote_button = CTkButton(master=frame, width=40, height=40, text='', fg_color='#D30000',
+                                               hover_color='#7C0A02', image=upvote_img)
         note_display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+
 
 def list_files_in_folder(folder_path):
     folder = bucket.list_blobs(prefix=folder_path)
@@ -268,13 +271,11 @@ def search_subjects():
         global current_search_dir
         current_search_dir = folder_path
         notes_search_error_label.configure(text='')
-        print(current_search_dir)
         global file_names
         file_names = list_files_in_folder(current_search_dir)
         display_note_menu()
     else:
         notes_search_error_label.configure(text='Set all fields!')
-
 
 
 # GUI Code
@@ -318,7 +319,8 @@ password_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 password_entry = CTkEntry(master=login_frame, show='*', width=225, fg_color="#EEEEEE", border_color="#1f61a5",
                           border_width=1, text_color="#000000")
 password_entry.pack(anchor="w", padx=(25, 0))
-show_password_box = CTkCheckBox(master=login_frame, text="Show Password",border_width=1, checkbox_width=20, checkbox_height=20, command=lambda: toggle_password())
+show_password_box = CTkCheckBox(master=login_frame, text="Show Password", border_width=1, checkbox_width=20,
+                                checkbox_height=20, command=lambda: toggle_password())
 show_password_box.pack(anchor="w", padx=(25, 0), pady=10)
 error_label = CTkLabel(master=login_frame, text="", text_color="#FF0000")
 error_label.pack(anchor="w", padx=(25, 0))
@@ -372,30 +374,31 @@ notes_filter_menu_title.pack(padx=10)
 notes_search_course_label = CTkLabel(master=notes_filter_menu_frame, text='Course', width=200)
 notes_search_course_label.pack(padx=10)
 notes_search_course_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
-                          border_width=1, values=filter_course_table, state='readonly')
+                                      border_width=1, values=filter_course_table, state='readonly')
 notes_search_course_box.pack(padx=10)
 notes_search_branch_label = CTkLabel(master=notes_filter_menu_frame, text='Branch', width=200)
 notes_search_branch_label.pack(padx=10)
 notes_search_branch_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
-                          border_width=1, values=filter_branch_table, state='readonly')
+                                      border_width=1, values=filter_branch_table, state='readonly')
 notes_search_branch_box.pack(padx=10)
 notes_search_year_label = CTkLabel(master=notes_filter_menu_frame, text='Year', width=200)
 notes_search_year_label.pack(padx=10)
 notes_search_year_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
-                          border_width=1, values=filter_year_table, state='readonly',
+                                    border_width=1, values=filter_year_table, state='readonly',
                                     command=show_filter_subjects)
 notes_search_year_box.pack(padx=10)
 notes_search_subject_label = CTkLabel(master=notes_filter_menu_frame, text='Subject', width=200)
 notes_search_subject_label.pack(padx=10)
 notes_search_subject_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
-                          border_width=1, values=filter_subject_table, state='readonly')
+                                       border_width=1, values=filter_subject_table, state='readonly')
 notes_search_subject_box.pack(padx=10)
 notes_search_module_label = CTkLabel(master=notes_filter_menu_frame, text='Module', width=200)
 notes_search_module_label.pack(padx=10)
 notes_search_module_box = CTkComboBox(master=notes_filter_menu_frame, border_color="#1f61a5",
-                          border_width=1, values=filter_module_table, state='readonly')
+                                      border_width=1, values=filter_module_table, state='readonly')
 notes_search_module_box.pack(padx=10)
-notes_search_button = CTkButton(master=notes_filter_menu_frame, text='  Search', image=search_img, command=lambda: search_subjects())
+notes_search_button = CTkButton(master=notes_filter_menu_frame, text='  Search', image=search_img,
+                                command=lambda: search_subjects())
 notes_search_button.pack(pady=10)
 notes_search_error_label = CTkLabel(master=notes_filter_menu_frame, text='', text_color="#FF0000")
 notes_search_error_label.pack()
@@ -412,33 +415,33 @@ notes_upload_menu_title.pack(padx=10)
 notes_upload_filename_label = CTkLabel(master=notes_upload_menu_frame, text='File name', width=200)
 notes_upload_filename_label.pack()
 notes_upload_filename_entry = CTkEntry(master=notes_upload_menu_frame, border_color="#1f61a5",
-                          border_width=1,)
+                                       border_width=1, )
 notes_upload_filename_entry.pack()
 notes_upload_course_label = CTkLabel(master=notes_upload_menu_frame, text='Course', width=200)
 notes_upload_course_label.pack(padx=10)
 notes_upload_course_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
-                          border_width=1, state='readonly', values=upload_course_table)
+                                      border_width=1, state='readonly', values=upload_course_table)
 notes_upload_course_box.pack(padx=10)
 notes_upload_branch_label = CTkLabel(master=notes_upload_menu_frame, text='Branch', width=200)
 notes_upload_branch_label.pack(padx=10)
 notes_upload_branch_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
-                          border_width=1, state='readonly', values=upload_branch_table)
+                                      border_width=1, state='readonly', values=upload_branch_table)
 notes_upload_branch_box.pack(padx=10)
 notes_upload_year_label = CTkLabel(master=notes_upload_menu_frame, text='Year', width=200)
 notes_upload_year_label.pack(padx=10)
 notes_upload_year_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
-                          border_width=1, values=upload_year_table, state='readonly',
+                                    border_width=1, values=upload_year_table, state='readonly',
                                     command=show_upload_subjects)
 notes_upload_year_box.pack(padx=10)
 notes_upload_subject_label = CTkLabel(master=notes_upload_menu_frame, text='Subject', width=200)
 notes_upload_subject_label.pack(padx=10)
 notes_upload_subject_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
-                          border_width=1, state='readonly', values=upload_subject_table)
+                                       border_width=1, state='readonly', values=upload_subject_table)
 notes_upload_subject_box.pack(padx=10)
 notes_upload_module_label = CTkLabel(master=notes_upload_menu_frame, text='Module', width=200)
 notes_upload_module_label.pack(padx=10)
 notes_upload_module_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
-                          border_width=1, state='readonly', values=upload_module_table)
+                                      border_width=1, state='readonly', values=upload_module_table)
 notes_upload_module_box.pack(padx=10)
 notes_upload_button = CTkButton(master=notes_upload_menu_frame, text='  Upload', image=upload_img,
                                 command=lambda: upload_pdf_using_dialog())
