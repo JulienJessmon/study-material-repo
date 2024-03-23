@@ -6,12 +6,14 @@ from PIL import Image
 from customtkinter import *
 from firebase_admin import credentials, firestore, storage
 
-cred = credentials.Certificate(r"D:\Desktop\Python\study-mat-repo\study-material-repo-firebase-adminsdk-bj0om-72965ed62f.json")
+cred = credentials.Certificate(
+    r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")
+# your path will be different based on where you store your private key
 firebase_admin.initialize_app(cred, {
     "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
     "authDomain": "study-material-repo.firebaseapp.com",
     "projectId": "study-material-repo",
-    "storageBucket": "study-material-repo.appspot.com",
+    'storageBucket': "study-material-repo.appspot.com",
     "messagingSenderId": "291006521607",
     "appId": "1:291006521607:web:7196317a36dcf6f0e365a2",
     "measurementId": "G-6EGQ548K06",
@@ -63,6 +65,7 @@ download_img = CTkImage(dark_image=download_img_data, light_image=download_img_d
 
 current_notes_search_dir = ''
 current_videos_search_dir = ''
+current_qb_search_dir = ''
 file_names = []
 
 
@@ -71,35 +74,65 @@ def select_pdf_file():
     return file_path
 
 
-def upload_pdf_using_dialog():
-    file_name = notes_upload_filename_entry.get()
-    course = notes_upload_course_box.get()
-    branch = notes_upload_branch_box.get()
-    year = notes_upload_year_box.get()
-    subject = notes_upload_subject_box.get()
-    module = notes_upload_module_box.get()
-    if all({file_name, course, branch, year, subject, module}):
-        pdf_path = select_pdf_file()
-        if pdf_path:
-            with open(pdf_path, "rb") as f:
-                pdf_data = f.read()
-                storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
-                print("PDF uploaded successfully!")
-                notes_upload_error_label.configure(text='PDF uploaded successfully!')
-                notes_upload_filename_entry.delete(0, END)
-                notes_upload_course_box.set("")
-                notes_upload_branch_box.set("")
-                notes_upload_year_box.set("")
-                notes_upload_subject_box.set("")
-                notes_upload_module_box.set("")
-    else:
-        notes_upload_error_label.configure(text='Fill all fields!')
-    db.collection("pdfData").add({
-        "filename": file_name,
-        "upvotes": 0,
-        "uploadedBy": loggedInUser,
-        "downloads": 0
-    })
+def upload_pdf_using_dialog(material_type):
+    if material_type == 'notes':
+        file_name = notes_upload_filename_entry.get()
+        course = notes_upload_course_box.get()
+        branch = notes_upload_branch_box.get()
+        year = notes_upload_year_box.get()
+        subject = notes_upload_subject_box.get()
+        module = notes_upload_module_box.get()
+        if all({file_name, course, branch, year, subject, module}):
+            pdf_path = select_pdf_file()
+            if pdf_path:
+                with open(pdf_path, "rb") as f:
+                    pdf_data = f.read()
+                    storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
+                    print("PDF uploaded successfully!")
+                    notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                    notes_upload_filename_entry.delete(0, END)
+                    notes_upload_course_box.set("")
+                    notes_upload_branch_box.set("")
+                    notes_upload_year_box.set("")
+                    notes_upload_subject_box.set("")
+                    notes_upload_module_box.set("")
+        else:
+            notes_upload_error_label.configure(text='Fill all fields!')
+        db.collection("pdfData").add({
+            "filename": file_name,
+            "upvotes": 0,
+            "uploadedBy": loggedInUser,
+            "downloads": 0
+        })
+    elif material_type == 'qb':
+        file_name = qb_upload_filename_entry.get()
+        course = qb_upload_course_box.get()
+        branch = qb_upload_branch_box.get()
+        year = qb_upload_year_box.get()
+        subject = qb_upload_subject_box.get()
+        module = qb_upload_module_box.get()
+        if all({file_name, course, branch, year, subject, module}):
+            pdf_path = select_pdf_file()
+            if pdf_path:
+                with open(pdf_path, "rb") as f:
+                    pdf_data = f.read()
+                    storage.child(f"qbs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
+                    print("PDF uploaded successfully!")
+                    qb_upload_error_label.configure(text='PDF uploaded successfully!')
+                    qb_upload_filename_entry.delete(0, END)
+                    qb_upload_course_box.set("")
+                    qb_upload_branch_box.set("")
+                    qb_upload_year_box.set("")
+                    qb_upload_subject_box.set("")
+                    qb_upload_module_box.set("")
+        else:
+            qb_upload_error_label.configure(text='Fill all fields!')
+        db.collection("qbData").add({
+            "filename": file_name,
+            "upvotes": 0,
+            "uploadedBy": loggedInUser,
+            "downloads": 0
+        })
 
 
 def select_destination_folder():
@@ -254,6 +287,26 @@ def show_videos_upload_subjects(self):
     videos_upload_module_box.set("")
 
 
+def show_qb_filter_subjects(self):
+    year = qb_search_year_box.get()
+    table = []
+    for item in CSE_subjects[year]:
+        table.append(item)
+    qb_search_subject_box.configure(values=table)
+    qb_search_subject_box.set("")
+    qb_search_module_box.set("")
+
+
+def show_qb_upload_subjects(self):
+    year = qb_upload_year_box.get()
+    table = []
+    for item in CSE_subjects[year]:
+        table.append(item)
+    qb_upload_subject_box.configure(values=table)
+    qb_upload_subject_box.set("")
+    qb_upload_module_box.set("")
+
+
 def toggle_password():
     if password_entry.cget('show') == '':
         password_entry.configure(show='*')
@@ -266,31 +319,58 @@ def toggle_password():
 # Display Frame content
 
 def display_note_menu(material_type):
-    global parent_frame, display_name
     if material_type == 'notes':
         for frame in notes_display_frame.winfo_children():
             frame.destroy()
     elif material_type == 'videos':
         for frame in videos_display_frame.winfo_children():
             frame.destroy()
+    elif material_type == 'qb':
+        for frame in qb_display_frame.winfo_children():
+            frame.destroy()
     for name in file_names:
         if material_type == 'notes':
             display_name = name.replace(current_notes_search_dir + "/", "")
             parent_frame = notes_display_frame
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#e4e5f1')
+            frame.pack(fill='x', pady=5)
+            display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+                                     text_color='#1f61a5')
+            display_title.pack(side=LEFT, pady=5, padx=5)
+            display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+                                                command=lambda n=name: download_pdf(n))
+            display_download_button.pack(side=RIGHT, pady=5, padx=5)
+            display_upvote_button = CTkButton(master=frame, width=40, height=40, text='', fg_color='#D30000',
+                                              hover_color='#7C0A02', image=upvote_img)
+            display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        elif material_type == 'qb':
+            display_name = name.replace(current_qb_search_dir + "/", "")
+            parent_frame = qb_display_frame
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#e4e5f1')
+            frame.pack(fill='x', pady=5)
+            display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+                                     text_color='#1f61a5')
+            display_title.pack(side=LEFT, pady=5, padx=5)
+            display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+                                                command=lambda n=name: download_pdf(n))
+            display_download_button.pack(side=RIGHT, pady=5, padx=5)
+            display_upvote_button = CTkButton(master=frame, width=40, height=40, text='', fg_color='#D30000',
+                                              hover_color='#7C0A02', image=upvote_img)
+            display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
         elif material_type == 'videos':
             display_name = name.replace(current_videos_search_dir + "/", "")
             parent_frame = videos_display_frame
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#e4e5f1', border_width=1)
-        frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
-                                      text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
-                                                 command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='', fg_color='#D30000',
-                                               hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#e4e5f1')
+            frame.pack(fill='x', pady=5)
+            display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+                                     text_color='#1f61a5')
+            display_title.pack(side=LEFT, pady=5, padx=5)
+            display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+                                                command=lambda n=name: download_video(n)) #Add video download function here
+            display_download_button.pack(side=RIGHT, pady=5, padx=5)
+            display_upvote_button = CTkButton(master=frame, width=40, height=40, text='', fg_color='#D30000',
+                                              hover_color='#7C0A02', image=upvote_img)
+            display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
 
 
 def list_files_in_folder(folder_path):
@@ -313,6 +393,21 @@ def search_subjects(material_type):
             current_notes_search_dir = folder_path
             notes_search_error_label.configure(text='')
             file_names = list_files_in_folder(current_notes_search_dir)
+            display_note_menu(material_type)
+        else:
+            notes_search_error_label.configure(text='Set all fields!')
+    elif material_type == 'qb':
+        course = qb_search_course_box.get()
+        branch = qb_search_branch_box.get()
+        year = qb_search_year_box.get()
+        subject = qb_search_subject_box.get()
+        module = qb_search_module_box.get()
+        if all({course, branch, year, subject, module}):
+            folder_path = f"qbs/{course}/{branch}/{year}/{subject}/{module}"
+            global current_qb_search_dir
+            current_qb_search_dir = folder_path
+            qb_search_error_label.configure(text='')
+            file_names = list_files_in_folder(current_qb_search_dir)
             display_note_menu(material_type)
         else:
             notes_search_error_label.configure(text='Set all fields!')
@@ -375,6 +470,7 @@ def upload_video():
     else:
         videos_upload_error_label.configure(text="Set all fields")
         print("Please provide all the required information.")
+
 
 def download_video(filename):
     pdf_ref = storage.child(f"{filename}")
@@ -461,18 +557,18 @@ notes_button = CTkButton(master=buttons_menu, text='Notes', command=lambda: show
 notes_button.pack(pady=20, padx=15)
 qb_button = CTkButton(master=buttons_menu, text='Question Banks', command=lambda: show_tabs('Question Banks'))
 qb_button.pack(pady=20, padx=15)
-qna_button = CTkButton(master=buttons_menu, text='Q & A', command=lambda: show_tabs('Q & A'))
-qna_button.pack(pady=20, padx=15)
 videos_button = CTkButton(master=buttons_menu, text='Videos', command=lambda: show_tabs('Videos'))
 videos_button.pack(pady=20, padx=15)
+qna_button = CTkButton(master=buttons_menu, text='Q & A', command=lambda: show_tabs('Q & A'))
+qna_button.pack(pady=20, padx=15)
 
 # Tabs
 menu_tabs = CTkTabview(master=window, fg_color='#fafafa', segmented_button_fg_color='#fafafa')
 
 notes_tab = menu_tabs.add('Notes')
 qb_tab = menu_tabs.add('Question Banks')
-qna_tab = menu_tabs.add('Q & A')
 video_tab = menu_tabs.add('Videos')
+qna_tab = menu_tabs.add('Q & A')
 
 # Notes tab
 
@@ -565,10 +661,107 @@ notes_upload_module_box = CTkComboBox(master=notes_upload_menu_frame, border_col
                                       border_width=1, state='readonly', values=upload_module_table)
 notes_upload_module_box.pack(padx=10)
 notes_upload_button = CTkButton(master=notes_upload_menu_frame, text='  Upload', image=upload_img,
-                                command=lambda: upload_pdf_using_dialog())
+                                command=lambda: upload_pdf_using_dialog('notes'))
 notes_upload_button.pack(pady=10)
 notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', text_color="#FF0000")
 notes_upload_error_label.pack()
+
+
+# qb tab
+qb_filter_menu_frame = CTkFrame(master=qb_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
+qb_filter_menu_frame.pack(side='left', fill='y')
+qb_upload_menu_frame = CTkFrame(master=qb_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
+qb_upload_menu_frame.pack(side='right', fill='y')
+qb_display_frame = CTkScrollableFrame(master=qb_tab, fg_color='#fafafa', scrollbar_button_color='#d2d3db')
+qb_display_frame.pack(side='left', expand=True, fill='both')
+
+filter_course_table = ['B.Tech']
+filter_branch_table = ['CSE', 'Other']
+filter_year_table = ['1st year', '2nd year', '3rd year', '4th year']
+filter_subject_table = ['']
+filter_module_table = ['1', '2', '3', '4', '5']
+
+qb_filter_menu_title = CTkLabel(master=qb_filter_menu_frame, text='Filter', text_color='#1f61a5', anchor='w',
+                                    justify='left', font=("Arial Bold", 18))
+qb_filter_menu_title.pack(padx=10)
+qb_search_course_label = CTkLabel(master=qb_filter_menu_frame, text='Course', width=200)
+qb_search_course_label.pack(padx=10)
+qb_search_course_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
+                                       border_width=1, values=filter_course_table, state='readonly')
+qb_search_course_box.pack(padx=10)
+qb_search_branch_label = CTkLabel(master=qb_filter_menu_frame, text='Branch', width=200)
+qb_search_branch_label.pack(padx=10)
+qb_search_branch_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
+                                       border_width=1, values=filter_branch_table, state='readonly')
+qb_search_branch_box.pack(padx=10)
+qb_search_year_label = CTkLabel(master=qb_filter_menu_frame, text='Year', width=200)
+qb_search_year_label.pack(padx=10)
+qb_search_year_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
+                                     border_width=1, values=filter_year_table, state='readonly',
+                                     command=show_qb_filter_subjects)
+qb_search_year_box.pack(padx=10)
+qb_search_subject_label = CTkLabel(master=qb_filter_menu_frame, text='Subject', width=200)
+qb_search_subject_label.pack(padx=10)
+qb_search_subject_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
+                                        border_width=1, values=filter_subject_table, state='readonly')
+qb_search_subject_box.pack(padx=10)
+qb_search_module_label = CTkLabel(master=qb_filter_menu_frame, text='Module', width=200)
+qb_search_module_label.pack(padx=10)
+qb_search_module_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
+                                       border_width=1, values=filter_module_table, state='readonly')
+qb_search_module_box.pack(padx=10)
+qb_search_button = CTkButton(master=qb_filter_menu_frame, text='  Search', image=search_img,
+                                 command=lambda: search_subjects('qb'))
+qb_search_button.pack(pady=10)
+qb_search_error_label = CTkLabel(master=qb_filter_menu_frame, text='', text_color="#FF0000")
+qb_search_error_label.pack()
+
+upload_course_table = ['B.Tech']
+upload_branch_table = ['CSE', 'Other']
+upload_year_table = ['1st year', '2nd year', '3rd year', '4th year']
+upload_subject_table = ['']
+upload_module_table = ['1', '2', '3', '4', '5']
+
+qb_upload_menu_title = CTkLabel(master=qb_upload_menu_frame, text='Upload', text_color='#1f61a5', anchor='w',
+                                    justify='left', font=("Arial Bold", 18))
+qb_upload_menu_title.pack(padx=10)
+qb_upload_filename_label = CTkLabel(master=qb_upload_menu_frame, text='File name', width=200)
+qb_upload_filename_label.pack()
+qb_upload_filename_entry = CTkEntry(master=qb_upload_menu_frame, border_color="#1f61a5",
+                                        border_width=1, )
+qb_upload_filename_entry.pack()
+qb_upload_course_label = CTkLabel(master=qb_upload_menu_frame, text='Course', width=200)
+qb_upload_course_label.pack(padx=10)
+qb_upload_course_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
+                                       border_width=1, state='readonly', values=upload_course_table)
+qb_upload_course_box.pack(padx=10)
+qb_upload_branch_label = CTkLabel(master=qb_upload_menu_frame, text='Branch', width=200)
+qb_upload_branch_label.pack(padx=10)
+qb_upload_branch_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
+                                       border_width=1, state='readonly', values=upload_branch_table)
+qb_upload_branch_box.pack(padx=10)
+qb_upload_year_label = CTkLabel(master=qb_upload_menu_frame, text='Year', width=200)
+qb_upload_year_label.pack(padx=10)
+qb_upload_year_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
+                                     border_width=1, values=upload_year_table, state='readonly',
+                                     command=show_qb_upload_subjects)
+qb_upload_year_box.pack(padx=10)
+qb_upload_subject_label = CTkLabel(master=qb_upload_menu_frame, text='Subject', width=200)
+qb_upload_subject_label.pack(padx=10)
+qb_upload_subject_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
+                                        border_width=1, state='readonly', values=upload_subject_table)
+qb_upload_subject_box.pack(padx=10)
+qb_upload_module_label = CTkLabel(master=qb_upload_menu_frame, text='Module', width=200)
+qb_upload_module_label.pack(padx=10)
+qb_upload_module_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
+                                       border_width=1, state='readonly', values=upload_module_table)
+qb_upload_module_box.pack(padx=10)
+qb_upload_button = CTkButton(master=qb_upload_menu_frame, text='  Upload', image=upload_img,
+                                 command=lambda: upload_pdf_using_dialog('qb'))
+qb_upload_button.pack(pady=10)
+qb_upload_error_label = CTkLabel(master=qb_upload_menu_frame, text='', text_color="#FF0000")
+qb_upload_error_label.pack()
+
 
 # videos tab
 videos_filter_menu_frame = CTkFrame(master=video_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
