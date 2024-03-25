@@ -6,9 +6,19 @@ from PIL import Image
 from customtkinter import *
 from firebase_admin import credentials, firestore, storage
 
-cred = credentials.Certificate(
-    r"C:\Users\Admin\PycharmProjects\MiniProject\study-material-repo-firebase-adminsdk-bj0om-7cddb30570.json")
-# your path will be different based on where you store your private key
+cred = credentials.Certificate({
+  "type": "service_account",
+  "project_id": "study-material-repo",
+  "private_key_id": "72965ed62fea3b57a31aad84dd730b0c75e3f462",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDYFifzg95n7akc\nVMpAD/TYcVQGmHrpWvhBvWIJj/NVXD3NzX1WcmNVGvIIKTdrANJzljw7/udt7OLO\nkV90wnsB3Ki8n3AhhxvVy0tOR6WN9esSj2cKY8JqG/JzUGB1RlSL4EVF6lt+EuXz\n8w76n13YT33NlUvKmEo/akRJmUPAm1aiqXly144sn7n8N61Ys7s5s0l0RbRJ4qWB\n557W3ArkA5zdg/hQgM+OB6t957SWOqDEREYBK/tLOgfIs6giT0P3W/T6wBlY3nbj\nEWxRJbHCFauQ7FsBUrXAJfKeXtYgpcoKfdp/RUE2W2q+Y9ps91+4ZEJf+E1GfA1r\nkBGKKr3NAgMBAAECggEALVQif9UJDeSfPbv0rFEck93cGkEYwYRtgP7dBrP9f8nI\nhjhFw2FeAH+VR4x73VSwEQKyMoSzoA3Z+yqoK0pTuu2CsQTCJSpeNrA9ZRem/TtZ\n20wdOaL5KMChkLqK7Xb6K9h5N6QkmrMUrWKuoPjW2xY7xek8W6ysIJbmacj+mzOn\n4HuR+Ok1yNdGkqvgCT3BkNmTD3MCZMcXWE2hnxxQ5VzZIiAGfVN8ud3ZYxh+2XjC\nW2TG0fQko6aS487X702wSuUyf60Fu5rm+uNHqmu3jobGrtCOck8j3Gm07RHHGpEY\nqr3v+iDGwUz9YRRCkrx3CqsPARdNaebfAaj+lCfqMQKBgQD8l80zWTj3il09/DwH\nv2QzQmoM7q6pG9gPqvWb0L9jhmD2dYZUVd/NQW1ef+4mUeMRWBAtC1TTHUo9f/HE\nu15AxBxZIaGLageYr7beOtHSR/lETmkcHwcI4tFg1fpe2wjXOd5h965c8uV/CyGe\ncnJqT7VoxHzY0WDxNMC35iwa3QKBgQDbAExs+OTY6ka0JNg9SQURg6xu8Wo5rSZv\njAq6bd2tOTUqpTbk30LFR7orwRS4cKPRPvEuy0hGR6OqdBNIJRb/fjVa6LDi6vpB\ni0rUEkU37Y5uY9qsDt5Z/DLMV2ZR9TeDqcW/USjVQz8f19GkkcdmDjlPQ0bvA4/z\naOV6H16nsQKBgD8T8Yx3JYC7rtlB2gPdSbp7RVyBZmCYsXYILVmB4amK7z/czXTW\nFRN+2T8WF3S+UkQMh82X3NDzqYx+HPQSDlGCJ8oiWeMk0UzR5IrOiYNHsfna0ujQ\n3sLbUYorJWD2tdh5fQ1d+s7/YUw+jWCyF9xwl07Ycoz6jIjvsYi7FByJAoGBANSE\ntKVm3kS1C4mS25iVPGrjmThL42Y25b6Han3BUcXgZvyMOPnewd/JnBsLkjztabsL\nVmavc+JncKZfX7q561hhtAsVFVoO5m0ma6XiWPNN/tKW6cPf5dvyxaTQB4Xu7UFC\nRZhDfNl/GUmgWFtX7+TUVr7ZLYORtGZj25QnzuXxAoGActiJG3xd5wMC+M+aST5b\nVwVxZYZ0MwsLG+inR9j8K4W66tj4NV4Spw5855WP9dnapLFf8JDtkk1KrKhnbT8j\nUSffMHoWUCjX9F73NkVYGRR/qyvXTeyV0jjGErgbNMIpNTweRopIsD1SyZo8cCOC\nynuhkACNWezhuLyT7KDAf80=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-bj0om@study-material-repo.iam.gserviceaccount.com",
+  "client_id": "103543428192303652993",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-bj0om%40study-material-repo.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+})
 firebase_admin.initialize_app(cred, {
     "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
     "authDomain": "study-material-repo.firebaseapp.com",
@@ -35,6 +45,15 @@ config = {
 firebase = pyrebase.initialize_app(config)
 storage = firebase.storage()
 
+script_directory = os.path.dirname(os.path.realpath(__file__))
+images_directory = os.path.join(script_directory, 'Images')
+
+if not os.path.exists(images_directory):
+    # print("Error: Images directory not found.")
+    raise FileNotFoundError()
+
+os.chdir(script_directory)
+
 CSE_subjects = {
     '1st year': ['PHT 100', 'PHT 110', 'MAT 101', 'EST 100', 'EST 120', 'HUT 101', 'CYT 100', 'EST 110', 'MAT 102',
                  'EST 102', 'EST 130', 'HUT 102'],
@@ -45,14 +64,16 @@ CSE_subjects = {
     '4th year': [''],
 }
 
-user_img_data = Image.open('Images/User1.png')
-password_img_data = Image.open('Images/password1.png')
-side_img_data = Image.open('Images/bg.png')
-logo_img_data = Image.open('Images/logo.png')
-search_img_data = Image.open('Images/search.png')
-upload_img_data = Image.open('Images/upload.png')
-upvote_img_data = Image.open('Images/upvote.png')
-download_img_data = Image.open('Images/download.png')
+img_dir = os.path.abspath(os.path.join(os.getcwd(), 'Images'))
+
+user_img_data = Image.open(os.path.join(img_dir, 'User1.png'))
+password_img_data = Image.open(os.path.join(img_dir, 'password1.png'))
+side_img_data = Image.open(os.path.join(img_dir, 'bg.png'))
+logo_img_data = Image.open(os.path.join(img_dir, 'logo.png'))
+search_img_data = Image.open(os.path.join(img_dir, 'search.png'))
+upload_img_data = Image.open(os.path.join(img_dir, 'upload.png'))
+upvote_img_data = Image.open(os.path.join(img_dir, 'upvote.png'))
+download_img_data = Image.open(os.path.join(img_dir, 'download.png'))
 
 user_img = CTkImage(dark_image=user_img_data, light_image=user_img_data, size=(17, 17))
 password_img = CTkImage(dark_image=password_img_data, light_image=password_img_data, size=(17, 17))
@@ -88,7 +109,7 @@ def upload_pdf_using_dialog(material_type):
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
                     storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
-                    print("PDF uploaded successfully!")
+                    # print("PDF uploaded successfully!")
                     notes_upload_error_label.configure(text='PDF uploaded successfully!')
                     notes_upload_filename_entry.delete(0, END)
                     notes_upload_course_box.set("")
@@ -117,7 +138,7 @@ def upload_pdf_using_dialog(material_type):
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
                     storage.child(f"qbs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
-                    print("PDF uploaded successfully!")
+                    # print("PDF uploaded successfully!")
                     qb_upload_error_label.configure(text='PDF uploaded successfully!')
                     qb_upload_filename_entry.delete(0, END)
                     qb_upload_course_box.set("")
@@ -156,9 +177,10 @@ def download_pdf(filename):
         with open(file_path, "wb") as f:
             f.write(response.content)
 
-        print("PDF downloaded successfully to:", file_path)
-    except requests.exceptions.RequestException as e:
-        print("Error downloading PDF:", e)
+        # print("PDF downloaded successfully to:", file_path)
+    except requests.exceptions.RequestException:
+        # print("Error downloading PDF:", e)
+        download_pdf(filename)
 
 
 def show_tabs(tab_name):
@@ -189,7 +211,7 @@ def login():
             ps1 = doc_data.get('Password')
 
             if username == us1 and password == ps1:
-                print("Logged in")
+                # print("Logged in")
                 global loggedInUser
                 loggedInUser = username
                 flag = 1
@@ -198,7 +220,7 @@ def login():
                 # exit(0)   exit the function if login is successful
 
         if flag == 0:
-            print("Wrong username or password, try again")
+            # print("Wrong username or password, try again")
             id_entry.delete(0, END)
             password_entry.delete(0, END)
             set_text("Wrong username or password, try again")
@@ -235,7 +257,7 @@ def user_details_add():  # function to add user
             doc_ref = db.collection('userCollection').document()
             doc_ref.set(data)
 
-            print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
+            # print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
         if flag == 0:
             set_text(
                 "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
@@ -366,7 +388,7 @@ def display_note_menu(material_type):
                                      text_color='#1f61a5')
             display_title.pack(side=LEFT, pady=5, padx=5)
             display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
-                                                command=lambda n=name: download_video(n)) #Add video download function here
+                                                command=lambda n=name: download_video(n))  # Add video download function here
             display_download_button.pack(side=RIGHT, pady=5, padx=5)
             display_upvote_button = CTkButton(master=frame, width=40, height=40, text='', fg_color='#D30000',
                                               hover_color='#7C0A02', image=upvote_img)
@@ -451,7 +473,7 @@ def upload_video():
             with open(video_path, "rb") as f:
                 video_data = f.read()
                 storage.child(f"videos/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(video_data)
-                print("Video uploaded successfully!")
+                # print("Video uploaded successfully!")
                 videos_upload_error_label.configure(text="Video uploaded successfully!")
                 db.collection("videoData").add({
                     "filename": file_name,
@@ -465,11 +487,11 @@ def upload_video():
                 videos_upload_year_box.set("")
                 videos_upload_subject_box.set("")
                 videos_upload_module_box.set("")
-        else:
-            print("File selection canceled.")
+        # else:
+            # print("File selection canceled.")
     else:
         videos_upload_error_label.configure(text="Set all fields")
-        print("Please provide all the required information.")
+        # print("Please provide all the required information.")
 
 
 def download_video(filename):
@@ -486,9 +508,10 @@ def download_video(filename):
         with open(file_path, "wb") as f:
             f.write(response.content)
 
-        print("Video downloaded successfully to:", file_path)
-    except requests.exceptions.RequestException as e:
-        print("Error downloading Video:", e)
+        # print("Video downloaded successfully to:", file_path)
+    except requests.exceptions.RequestException:
+        # print("Error downloading Video:", e)
+        download_video(filename)
 
 
 # GUI Code
