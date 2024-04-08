@@ -55,12 +55,12 @@ if not os.path.exists(images_directory):
 os.chdir(script_directory)
 
 CSE_subjects = {
-    '1st year': ['PHT 100', 'PHT 110', 'MAT 101', 'EST 100', 'EST 120', 'HUT 101', 'CYT 100', 'EST 110', 'MAT 102',
-                 'EST 102', 'EST 130', 'HUT 102'],
-    '2nd year': ['MAT 203', 'CST 201', 'CST 203', 'MNC 202', 'EST 200', 'HUT 200', 'MAT 206', 'CST 202', 'CST 204',
-                 'CST 206', 'EST 200', 'HUT 200', 'MNC 202'],
-    '3rd year': ['CST 303', 'CST 305', 'CST 307', 'CST 309', 'MCN 301', 'CST 301', 'CST 302', 'CST 304', 'CST 306',
-                 'CST 322', 'CST 332', 'HUT 300'],
+    '1st year': ['Engineering Physics A - PHT 100', 'Engineering Physics B - PHT 110', 'Linear Algebra and Calculus - MAT 101', 'Engineering Mechanics - EST 100', 'Basics of Civil and Mechanical Engineering - EST 120', 'Life Skills - HUT 101', 'Engineering Chemistry - CYT 100', 'Engineering Graphics - EST 110', 'Vector Calculus, Differential Equations and Transforms - MAT 102',
+                 'Programming in C - EST 102', 'Basics of Electrical and Electronics Engineering - EST 130', 'Professionsal Communication - HUT 102'],
+    '2nd year': ['Discrete Mathematical Structures - MAT 203', 'Data Structures - CST 201', 'Logic System Design - CST 203', 'Sustainable Engineering - MNC 202', 'Design and Engineering - EST 200', 'Professional Ethics - HUT 200', 'Graph Theory - MAT 206', 'Computer Organization and Architecture - CST 202', 'Database Management System - CST 204',
+                 'Operating System - CST 206', 'Design and Engineering - EST 200', 'Constitution of India - MNC 202'],
+    '3rd year': ['Computer Networks - CST 303', 'System Software - CST 305', 'Microprocessors and Microcontrollers - CST 307', 'Management of Software Systems - CST 309', 'Disaster Management - MCN 301', 'Formal Languages and Automata Theory - CST 301', 'Compiler Design - CST 302', 'Computer Graphics and Image Processing - CST 304', 'Algorithm Analysis and Design - CST 306',
+                 'Data Analytics - CST 322', 'Foundations of Security in Computing - CST 332', 'Industrial Economics and Foreign Trade - HUT 300'],
     '4th year': [''],
 }
 
@@ -89,14 +89,18 @@ current_videos_search_dir = ''
 current_qb_search_dir = ''
 file_names = []
 
+loggedInUser = ''
+current_user_type = ''
+
 
 def select_pdf_file():
     file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     return file_path
 
 
-def upload_pdf_using_dialog(material_type):
-    if material_type == 'notes':
+def upload_pdf_using_dialog():
+    material_type = notes_upload_type_box.get()
+    if material_type == 'Notes':
         file_name = notes_upload_filename_entry.get()
         course = notes_upload_course_box.get()
         branch = notes_upload_branch_box.get()
@@ -108,10 +112,11 @@ def upload_pdf_using_dialog(material_type):
             if pdf_path:
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
-                    storage.child(f"pdfs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
+                    storage.child(f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(pdf_data)
                     # print("PDF uploaded successfully!")
                     notes_upload_error_label.configure(text='PDF uploaded successfully!')
                     notes_upload_filename_entry.delete(0, END)
+                    notes_upload_type_box.set("")
                     notes_upload_course_box.set("")
                     notes_upload_branch_box.set("")
                     notes_upload_year_box.set("")
@@ -125,35 +130,69 @@ def upload_pdf_using_dialog(material_type):
             "uploadedBy": loggedInUser,
             "downloads": 0
         })
-    elif material_type == 'qb':
-        file_name = qb_upload_filename_entry.get()
-        course = qb_upload_course_box.get()
-        branch = qb_upload_branch_box.get()
-        year = qb_upload_year_box.get()
-        subject = qb_upload_subject_box.get()
-        module = qb_upload_module_box.get()
+    elif material_type == 'Question Banks':
+        file_name = notes_upload_filename_entry.get()
+        course = notes_upload_course_box.get()
+        branch = notes_upload_branch_box.get()
+        year = notes_upload_year_box.get()
+        subject = notes_upload_subject_box.get()
+        module = notes_upload_module_box.get()
         if all({file_name, course, branch, year, subject, module}):
             pdf_path = select_pdf_file()
             if pdf_path:
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
-                    storage.child(f"qbs/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(pdf_data)
+                    storage.child(f"Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(pdf_data)
                     # print("PDF uploaded successfully!")
-                    qb_upload_error_label.configure(text='PDF uploaded successfully!')
-                    qb_upload_filename_entry.delete(0, END)
-                    qb_upload_course_box.set("")
-                    qb_upload_branch_box.set("")
-                    qb_upload_year_box.set("")
-                    qb_upload_subject_box.set("")
-                    qb_upload_module_box.set("")
+                    notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                    notes_upload_filename_entry.delete(0, END)
+                    notes_upload_type_box.set("")
+                    notes_upload_course_box.set("")
+                    notes_upload_branch_box.set("")
+                    notes_upload_year_box.set("")
+                    notes_upload_subject_box.set("")
+                    notes_upload_module_box.set("")
         else:
-            qb_upload_error_label.configure(text='Fill all fields!')
+            notes_upload_error_label.configure(text='Fill all fields!')
         db.collection("qbData").add({
             "filename": file_name,
             "upvotes": 0,
             "uploadedBy": loggedInUser,
             "downloads": 0
         })
+    elif material_type == 'Videos':
+        file_name = notes_upload_filename_entry.get()
+        course = notes_upload_course_box.get()
+        branch = notes_upload_branch_box.get()
+        year = notes_upload_year_box.get()
+        subject = notes_upload_subject_box.get()
+        module = notes_upload_module_box.get()
+        if all({file_name, course, branch, year, subject, module}):
+            video_path = select_video_file()
+            if video_path:
+                with open(video_path, "rb") as f:
+                    video_data = f.read()
+                    storage.child(f"Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(video_data)
+                    # print("Video uploaded successfully!")
+                    notes_upload_error_label.configure(text="Video uploaded successfully!")
+                    db.collection("videoData").add({
+                        "filename": file_name,
+                        "upvotes": 0,
+                        "uploadedBy": loggedInUser,  # remove the "" after testing
+                        "downloads": 0
+                    })
+                    notes_upload_filename_entry.delete(0, END)
+                    notes_upload_type_box.set("")
+                    notes_upload_course_box.set("")
+                    notes_upload_branch_box.set("")
+                    notes_upload_year_box.set("")
+                    notes_upload_subject_box.set("")
+                    notes_upload_module_box.set("")
+            # else:
+            # print("File selection canceled.")
+        else:
+            notes_upload_error_label.configure(text="Fill all fields!")
+            # print("Please provide all the required information.")
 
 
 def select_destination_folder():
@@ -209,11 +248,14 @@ def login():
             doc_data = doc.to_dict()
             us1 = doc_data.get('Username')
             ps1 = doc_data.get('Password')
+            ut1 = doc_data.get('UserType')
 
             if username == us1 and password == ps1:
                 # print("Logged in")
                 global loggedInUser
+                global current_user_type
                 loggedInUser = username
+                current_user_type = ut1
                 flag = 1
                 next_page(login_page, main_menu)
                 main_menu.pack(expand=True, fill='both')
@@ -229,9 +271,10 @@ def login():
 
 def user_details_add():  # function to add user
     flag = 0
-    username = id_entry.get()
-    password = password_entry.get()
-    if username != "" and password != "":
+    username = signup_id_entry.get()
+    password = signup_password_entry.get()
+    user_type = signup_user_type_box.get()
+    if all({username,password,user_type}):
         if (password.islower() is False) and (password.isalnum() is False) and (password.isspace() is False) and (
                 len(password) >= 8):
             has_number = False
@@ -242,16 +285,16 @@ def user_details_add():  # function to add user
             if has_number is True:
                 flag = 1
             elif has_number is False:
-                set_text(
-                    "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
+                signup_error_label.configure(text="A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
                     "number are required")
-                id_entry.delete(0, END)
-                password_entry.delete(0, END)
+                signup_id_entry.delete(0, END)
+                signup_password_entry.delete(0, END)
                 user_details_add()
         if flag == 1:
             data = {
                 'Username': username,
-                'Password': password
+                'Password': password,
+                'UserType': user_type
             }
 
             doc_ref = db.collection('userCollection').document()
@@ -259,14 +302,17 @@ def user_details_add():  # function to add user
 
             # print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
         if flag == 0:
-            set_text(
-                "A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
+            signup_error_label.configure(
+                text="A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
                 "number are required")
-            id_entry.delete(0, END)
-            password_entry.delete(0, END)
+            signup_id_entry.delete(0, END)
+            signup_password_entry.delete(0, END)
             user_details_add()
-    id_entry.delete(0, END)
-    password_entry.delete(0, END)
+    else:
+        signup_error_label.configure(
+            text="Set all required fields")
+    signup_id_entry.delete(0, END)
+    signup_password_entry.delete(0, END)
 
 
 def show_notes_filter_subjects(self):
@@ -336,6 +382,15 @@ def toggle_password():
     else:
         password_entry.configure(show='')
         show_password_box.configure(text='Hide Password')
+
+
+def signup_toggle_password():
+    if signup_password_entry.cget('show') == '':
+        signup_password_entry.configure(show='*')
+        signup_show_password_box.configure(text='Show Password')
+    else:
+        signup_password_entry.configure(show='')
+        signup_show_password_box.configure(text='Hide Password')
 
 
 # Display Frame content
@@ -514,6 +569,12 @@ def download_video(filename):
         download_video(filename)
 
 
+def upload_menu_toggle():
+    if notes_upload_menu_frame_container.winfo_ismapped():
+        notes_upload_menu_frame_container.pack_forget()
+    else:
+        notes_upload_menu_frame_container.pack(side='right', fill='y')
+
 # GUI Code
 # window
 
@@ -586,21 +647,58 @@ qna_button = CTkButton(master=buttons_menu, text='Q & A', command=lambda: show_t
 qna_button.pack(pady=20, padx=15)
 
 # Tabs
-menu_tabs = CTkTabview(master=window, fg_color='#fafafa', segmented_button_fg_color='#fafafa')
+menu_tabs = CTkTabview(master=window, fg_color='#fafafa', segmented_button_fg_color='#fafafa',corner_radius=12)
 
 notes_tab = menu_tabs.add('Notes')
 qb_tab = menu_tabs.add('Question Banks')
 video_tab = menu_tabs.add('Videos')
 qna_tab = menu_tabs.add('Q & A')
+signup_tab = menu_tabs.add('Create User')
 
 # Notes tab
 
 notes_filter_menu_frame = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
 notes_filter_menu_frame.pack(side='left', fill='y')
-notes_upload_menu_frame = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
-notes_upload_menu_frame.pack(side='right', fill='y')
-notes_display_frame = CTkScrollableFrame(master=notes_tab, fg_color='#fafafa', scrollbar_button_color='#d2d3db')
+notes_upload_menu_frame_container = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
+notes_upload_menu_frame = CTkScrollableFrame(master=notes_upload_menu_frame_container)
+notes_upload_menu_frame.pack(expand = True,fill='both')
+
+notes_display_frame = CTkFrame(master=notes_tab, fg_color='#fafafa')
 notes_display_frame.pack(side='left', expand=True, fill='both')
+
+notes_display_tabs = CTkTabview(master=notes_display_frame, fg_color='#f1f1f9',corner_radius=12)
+notes_display_tabs.pack(expand=True, fill='both', side='top')
+
+teacher_tab = notes_display_tabs.add("Teacher")
+student_tab = notes_display_tabs.add("Student")
+
+teacher_tabs = CTkTabview(master=teacher_tab, fg_color='#dbdbed',corner_radius=12)
+teacher_tabs.pack(expand=True, fill='both')
+
+teacher_pdf_tab = teacher_tabs.add('Notes')
+teacher_qb_tab = teacher_tabs.add('Question Banks')
+teacher_video_tab = teacher_tabs.add('Videos')
+
+teacher_pdf_display = CTkScrollableFrame(master=teacher_pdf_tab)
+teacher_pdf_display.pack(expand=True, fill='both')
+teacher_qb_display = CTkScrollableFrame(master=teacher_qb_tab)
+teacher_qb_display.pack(expand=True, fill='both')
+teacher_video_display = CTkScrollableFrame(master=teacher_video_tab)
+teacher_video_display.pack(expand=True, fill='both')
+
+student_tabs = CTkTabview(master=student_tab, fg_color='#dbdbed',corner_radius=12)
+student_tabs.pack(expand=True, fill='both')
+
+student_pdf_tab = student_tabs.add('Notes')
+student_qb_tab = student_tabs.add('Question Banks')
+student_video_tab = student_tabs.add('Videos')
+
+student_pdf_display = CTkScrollableFrame(master=student_pdf_tab)
+student_pdf_display.pack(expand=True, fill='both')
+student_qb_display = CTkScrollableFrame(master=student_qb_tab)
+student_qb_display.pack(expand=True, fill='both')
+student_video_display = CTkScrollableFrame(master=student_video_tab)
+student_video_display.pack(expand=True, fill='both')
 
 filter_course_table = ['B.Tech']
 filter_branch_table = ['CSE', 'Other']
@@ -649,6 +747,9 @@ upload_year_table = ['1st year', '2nd year', '3rd year', '4th year']
 upload_subject_table = ['']
 upload_module_table = ['1', '2', '3', '4', '5']
 
+notes_upload_menu_button = CTkButton(master=notes_display_frame, text='  Upload', image=upload_img, command= lambda: upload_menu_toggle())
+notes_upload_menu_button.pack(pady=10)
+
 notes_upload_menu_title = CTkLabel(master=notes_upload_menu_frame, text='Upload', text_color='#1f61a5', anchor='w',
                                    justify='left', font=("Arial Bold", 18))
 notes_upload_menu_title.pack(padx=10)
@@ -657,11 +758,18 @@ notes_upload_filename_label.pack()
 notes_upload_filename_entry = CTkEntry(master=notes_upload_menu_frame, border_color="#1f61a5",
                                        border_width=1, )
 notes_upload_filename_entry.pack()
+file_types = ['Notes', 'Question Banks', 'Videos']
+notes_upload_type_label = CTkLabel(master=notes_upload_menu_frame, text='File Type', width=200)
+notes_upload_type_label.pack(padx=10)
+notes_upload_type_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
+                                      border_width=1, state='readonly', values=file_types)
+notes_upload_type_box.pack(padx=10)
 notes_upload_course_label = CTkLabel(master=notes_upload_menu_frame, text='Course', width=200)
 notes_upload_course_label.pack(padx=10)
 notes_upload_course_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
                                       border_width=1, state='readonly', values=upload_course_table)
 notes_upload_course_box.pack(padx=10)
+
 notes_upload_branch_label = CTkLabel(master=notes_upload_menu_frame, text='Branch', width=200)
 notes_upload_branch_label.pack(padx=10)
 notes_upload_branch_box = CTkComboBox(master=notes_upload_menu_frame, border_color="#1f61a5",
@@ -684,7 +792,7 @@ notes_upload_module_box = CTkComboBox(master=notes_upload_menu_frame, border_col
                                       border_width=1, state='readonly', values=upload_module_table)
 notes_upload_module_box.pack(padx=10)
 notes_upload_button = CTkButton(master=notes_upload_menu_frame, text='  Upload', image=upload_img,
-                                command=lambda: upload_pdf_using_dialog('notes'))
+                                command=lambda: upload_pdf_using_dialog())
 notes_upload_button.pack(pady=10)
 notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', text_color="#FF0000")
 notes_upload_error_label.pack()
@@ -880,6 +988,55 @@ videos_upload_button = CTkButton(master=videos_upload_menu_frame, text='  Upload
 videos_upload_button.pack(pady=10)
 videos_upload_error_label = CTkLabel(master=videos_upload_menu_frame, text='', text_color="#FF0000")
 videos_upload_error_label.pack()
+
+# user signup
+signup_page = CTkFrame(master=signup_tab)
+signup_page.pack(expand=True, fill='both')
+
+signup_right_frame = CTkFrame(master=signup_page, height=500, width=300, fg_color="#ffffff")
+signup_right_frame.pack(expand=True, side='right', fill='both')
+
+signup_login_frame = CTkFrame(master=signup_right_frame, height=500, width=300, fg_color="#ffffff")
+signup_login_frame.propagate(False)
+signup_login_frame.pack(expand=True)
+
+signup_title_label = CTkLabel(master=signup_login_frame, text='Create User', text_color='#1f61a5', anchor='w', justify='left',
+                       font=("Arial Bold", 24))
+signup_title_label.pack(anchor="w", pady=(50, 5), padx=(25, 0))
+
+signup_id_label = CTkLabel(master=signup_login_frame, text='  User ID', text_color="#1f61a5", anchor="w", justify="left",
+                    font=("Arial Bold", 14), image=user_img, compound="left")
+signup_id_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
+signup_id_entry = CTkEntry(master=signup_login_frame, width=225, fg_color="#EEEEEE", border_color="#1f61a5", border_width=1,
+                    text_color="#000000")
+signup_id_entry.pack(anchor="w", padx=(25, 0))
+
+signup_password_label = CTkLabel(master=signup_login_frame, text='  Password', text_color="#1f61a5", anchor="w", justify="left",
+                          font=("Arial Bold", 14), image=password_img, compound="left")
+signup_password_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
+signup_password_entry = CTkEntry(master=signup_login_frame, show='*', width=225, fg_color="#EEEEEE", border_color="#1f61a5",
+                          border_width=1, text_color="#000000")
+signup_password_entry.pack(anchor="w", padx=(25, 0))
+signup_show_password_box = CTkCheckBox(master=signup_login_frame, text="Show Password", border_width=1, checkbox_width=20,
+                                checkbox_height=20, command=lambda: signup_toggle_password())
+signup_show_password_box.pack(anchor="w", padx=(25, 0), pady=10)
+
+signup_user_type_label = CTkLabel(master=signup_login_frame, text='  User Type', text_color="#1f61a5", anchor="w", justify="left",
+                          font=("Arial Bold", 14), image=user_img, compound="left")
+signup_user_type_label.pack(anchor="w", padx=(25, 0))
+
+user_types = ['Student', 'Teacher', 'Admin']
+
+signup_user_type_box = CTkComboBox(master=signup_login_frame,width=225, fg_color="#EEEEEE", border_color="#1f61a5",
+                          border_width=1, text_color="#000000",values=user_types, state='readonly')
+signup_user_type_box.pack(anchor="w", padx=(25, 0))
+
+signup_error_label = CTkLabel(master=signup_login_frame, text="", text_color="#FF0000")
+signup_error_label.pack(anchor="w", padx=(25, 0))
+
+signup_button = CTkButton(master=signup_login_frame, text="Login", fg_color="#1f61a5", hover_color="#19429d",
+                         font=("Arial Bold", 12), text_color="#ffffff", width=225, command=lambda: user_details_add())
+signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 
 # run
 window.mainloop()
