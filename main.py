@@ -284,6 +284,7 @@ def login():
                 loggedInUser = username
                 current_user_type = ut1
                 flag = 1
+                set_text("")
                 next_page(login_page, main_menu)
                 logged_in_menu_container.pack(expand=True, fill='both')
                 main_menu.pack(expand=True, fill='both')
@@ -374,45 +375,6 @@ def show_notes_upload_subjects(self):
     notes_upload_subject_box.set("")
     notes_upload_module_box.set("")
 
-
-def show_videos_filter_subjects(self):
-    year = videos_search_year_box.get()
-    table = []
-    for item in CSE_subjects[year]:
-        table.append(item)
-    videos_search_subject_box.configure(values=table)
-    videos_search_subject_box.set("")
-    videos_search_module_box.set("")
-
-
-def show_videos_upload_subjects(self):
-    year = videos_upload_year_box.get()
-    table = []
-    for item in CSE_subjects[year]:
-        table.append(item)
-    videos_upload_subject_box.configure(values=table)
-    videos_upload_subject_box.set("")
-    videos_upload_module_box.set("")
-
-
-def show_qb_filter_subjects(self):
-    year = qb_search_year_box.get()
-    table = []
-    for item in CSE_subjects[year]:
-        table.append(item)
-    qb_search_subject_box.configure(values=table)
-    qb_search_subject_box.set("")
-    qb_search_module_box.set("")
-
-
-def show_qb_upload_subjects(self):
-    year = qb_upload_year_box.get()
-    table = []
-    for item in CSE_subjects[year]:
-        table.append(item)
-    qb_upload_subject_box.configure(values=table)
-    qb_upload_subject_box.set("")
-    qb_upload_module_box.set("")
 
 
 def toggle_password():
@@ -574,40 +536,6 @@ def select_video_file():
     return file_path
 
 
-def upload_video():
-    file_name = videos_upload_filename_entry.get()
-    course = videos_upload_course_box.get()
-    branch = videos_upload_branch_box.get()
-    year = videos_upload_year_box.get()
-    subject = videos_upload_subject_box.get()
-    module = videos_upload_module_box.get()
-    if all({file_name, course, branch, year, subject, module}):
-        video_path = select_video_file()
-        if video_path:
-            with open(video_path, "rb") as f:
-                video_data = f.read()
-                storage.child(f"videos/{course}/{branch}/{year}/{subject}/{module}/" + file_name).put(video_data)
-                # print("Video uploaded successfully!")
-                videos_upload_error_label.configure(text="Video uploaded successfully!")
-                db.collection("videoData").add({
-                    "filename": file_name,
-                    "upvotes": 0,
-                    "uploadedBy": loggedInUser,  # remove the "" after testing
-                    "downloads": 0
-                })
-                videos_upload_filename_entry.delete(0, END)
-                videos_upload_course_box.set("")
-                videos_upload_branch_box.set("")
-                videos_upload_year_box.set("")
-                videos_upload_subject_box.set("")
-                videos_upload_module_box.set("")
-        # else:
-        # print("File selection canceled.")
-    else:
-        videos_upload_error_label.configure(text="Set all fields")
-        # print("Please provide all the required information.")
-
-
 def download_video(filename):
     pdf_ref = storage.child(f"{filename}")
 
@@ -707,24 +635,20 @@ buttons_menu.pack(pady=20)
 notes_button = CTkButton(master=buttons_menu, corner_radius=25, text='Notes', font=("Arial Bold", 12),
                          command=lambda: show_tabs('Notes'))
 notes_button.pack(pady=20, padx=15)
-qb_button = CTkButton(master=buttons_menu, corner_radius=25, text='Question Banks', font=("Arial Bold", 12),
-                      command=lambda: show_tabs('Question Banks'))
-qb_button.pack(pady=20, padx=15)
-videos_button = CTkButton(master=buttons_menu, corner_radius=25, text='Videos', font=("Arial Bold", 12),
-                          command=lambda: show_tabs('Videos'))
-videos_button.pack(pady=20, padx=15)
 qna_button = CTkButton(master=buttons_menu, corner_radius=25, text='Q & A', font=("Arial Bold", 12),
                        command=lambda: show_tabs('Q & A'))
 qna_button.pack(pady=20, padx=15)
+profile_button = CTkButton(master=buttons_menu, corner_radius=25, text='Profile', font=("Arial Bold", 12),
+                       command=lambda: show_tabs('Profile'))
+profile_button.pack(pady=20, padx=15)
 
 # Tabs
 menu_tabs = CTkTabview(master=logged_in_menu_container, fg_color='#e7e7f4', segmented_button_fg_color='#e7e7f4',
                        corner_radius=12)
 
 notes_tab = menu_tabs.add('Notes')
-qb_tab = menu_tabs.add('Question Banks')
-video_tab = menu_tabs.add('Videos')
 qna_tab = menu_tabs.add('Q & A')
+profile_tab = menu_tabs.add('Profile')
 
 # Notes tab
 
@@ -830,7 +754,7 @@ upload_year_table = ['1st year', '2nd year', '3rd year', '4th year']
 upload_subject_table = ['']
 upload_module_table = ['1', '2', '3', '4', '5']
 
-notes_upload_menu_button = CTkButton(master=notes_display_frame, text='  Upload', image=upload_img,
+notes_upload_menu_button = CTkButton(master=notes_display_frame, text='  Upload', image=upload_img,corner_radius=25,
                                      font=("Arial Bold", 12), command=lambda: upload_menu_toggle())
 notes_upload_menu_button.pack(pady=10)
 
@@ -895,195 +819,7 @@ notes_upload_button.pack(pady=10)
 notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', text_color="#FF0000")
 notes_upload_error_label.pack()
 
-# qb tab
-qb_filter_menu_frame = CTkFrame(master=qb_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
-qb_filter_menu_frame.pack(side='left', fill='y')
-qb_upload_menu_frame = CTkFrame(master=qb_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
-qb_upload_menu_frame.pack(side='right', fill='y')
-qb_display_frame = CTkScrollableFrame(master=qb_tab, fg_color='#fafafa', scrollbar_button_color='#d2d3db')
-qb_display_frame.pack(side='left', expand=True, fill='both')
 
-filter_course_table = ['B.Tech']
-filter_branch_table = ['CSE', 'Other']
-filter_year_table = ['1st year', '2nd year', '3rd year', '4th year']
-filter_subject_table = ['']
-filter_module_table = ['1', '2', '3', '4', '5']
-
-qb_filter_menu_title = CTkLabel(master=qb_filter_menu_frame, text='Filter', text_color='#1f61a5', anchor='w',
-                                justify='left', font=("Arial Bold", 18))
-qb_filter_menu_title.pack(padx=10)
-qb_search_course_label = CTkLabel(master=qb_filter_menu_frame, text='Course', width=200)
-qb_search_course_label.pack(padx=10)
-qb_search_course_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
-                                   border_width=1, values=filter_course_table, state='readonly')
-qb_search_course_box.pack(padx=10)
-qb_search_branch_label = CTkLabel(master=qb_filter_menu_frame, text='Branch', width=200)
-qb_search_branch_label.pack(padx=10)
-qb_search_branch_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
-                                   border_width=1, values=filter_branch_table, state='readonly')
-qb_search_branch_box.pack(padx=10)
-qb_search_year_label = CTkLabel(master=qb_filter_menu_frame, text='Year', width=200)
-qb_search_year_label.pack(padx=10)
-qb_search_year_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
-                                 border_width=1, values=filter_year_table, state='readonly',
-                                 command=show_qb_filter_subjects)
-qb_search_year_box.pack(padx=10)
-qb_search_subject_label = CTkLabel(master=qb_filter_menu_frame, text='Subject', width=200)
-qb_search_subject_label.pack(padx=10)
-qb_search_subject_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
-                                    border_width=1, values=filter_subject_table, state='readonly')
-qb_search_subject_box.pack(padx=10)
-qb_search_module_label = CTkLabel(master=qb_filter_menu_frame, text='Module', width=200)
-qb_search_module_label.pack(padx=10)
-qb_search_module_box = CTkComboBox(master=qb_filter_menu_frame, border_color="#1f61a5",
-                                   border_width=1, values=filter_module_table, state='readonly')
-qb_search_module_box.pack(padx=10)
-qb_search_button = CTkButton(master=qb_filter_menu_frame, text='  Search', image=search_img,
-                             command=lambda: search_subjects('qb'))
-qb_search_button.pack(pady=10)
-qb_search_error_label = CTkLabel(master=qb_filter_menu_frame, text='', text_color="#FF0000")
-qb_search_error_label.pack()
-
-upload_course_table = ['B.Tech']
-upload_branch_table = ['CSE', 'Other']
-upload_year_table = ['1st year', '2nd year', '3rd year', '4th year']
-upload_subject_table = ['']
-upload_module_table = ['1', '2', '3', '4', '5']
-
-qb_upload_menu_title = CTkLabel(master=qb_upload_menu_frame, text='Upload', text_color='#1f61a5', anchor='w',
-                                justify='left', font=("Arial Bold", 18))
-qb_upload_menu_title.pack(padx=10)
-qb_upload_filename_label = CTkLabel(master=qb_upload_menu_frame, text='File name', width=200)
-qb_upload_filename_label.pack()
-qb_upload_filename_entry = CTkEntry(master=qb_upload_menu_frame, border_color="#1f61a5",
-                                    border_width=1, )
-qb_upload_filename_entry.pack()
-qb_upload_course_label = CTkLabel(master=qb_upload_menu_frame, text='Course', width=200)
-qb_upload_course_label.pack(padx=10)
-qb_upload_course_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
-                                   border_width=1, state='readonly', values=upload_course_table)
-qb_upload_course_box.pack(padx=10)
-qb_upload_branch_label = CTkLabel(master=qb_upload_menu_frame, text='Branch', width=200)
-qb_upload_branch_label.pack(padx=10)
-qb_upload_branch_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
-                                   border_width=1, state='readonly', values=upload_branch_table)
-qb_upload_branch_box.pack(padx=10)
-qb_upload_year_label = CTkLabel(master=qb_upload_menu_frame, text='Year', width=200)
-qb_upload_year_label.pack(padx=10)
-qb_upload_year_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
-                                 border_width=1, values=upload_year_table, state='readonly',
-                                 command=show_qb_upload_subjects)
-qb_upload_year_box.pack(padx=10)
-qb_upload_subject_label = CTkLabel(master=qb_upload_menu_frame, text='Subject', width=200)
-qb_upload_subject_label.pack(padx=10)
-qb_upload_subject_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
-                                    border_width=1, state='readonly', values=upload_subject_table)
-qb_upload_subject_box.pack(padx=10)
-qb_upload_module_label = CTkLabel(master=qb_upload_menu_frame, text='Module', width=200)
-qb_upload_module_label.pack(padx=10)
-qb_upload_module_box = CTkComboBox(master=qb_upload_menu_frame, border_color="#1f61a5",
-                                   border_width=1, state='readonly', values=upload_module_table)
-qb_upload_module_box.pack(padx=10)
-qb_upload_button = CTkButton(master=qb_upload_menu_frame, text='  Upload', image=upload_img,
-                             command=lambda: upload_pdf_using_dialog('qb'))
-qb_upload_button.pack(pady=10)
-qb_upload_error_label = CTkLabel(master=qb_upload_menu_frame, text='', text_color="#FF0000")
-qb_upload_error_label.pack()
-
-# videos tab
-videos_filter_menu_frame = CTkFrame(master=video_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
-videos_filter_menu_frame.pack(side='left', fill='y')
-videos_upload_menu_frame = CTkFrame(master=video_tab, width=200, border_color='#484b6a', fg_color='#e4e5f1')
-videos_upload_menu_frame.pack(side='right', fill='y')
-videos_display_frame = CTkScrollableFrame(master=video_tab, fg_color='#fafafa', scrollbar_button_color='#d2d3db')
-videos_display_frame.pack(side='left', expand=True, fill='both')
-
-filter_course_table = ['B.Tech']
-filter_branch_table = ['CSE', 'Other']
-filter_year_table = ['1st year', '2nd year', '3rd year', '4th year']
-filter_subject_table = ['']
-filter_module_table = ['1', '2', '3', '4', '5']
-
-videos_filter_menu_title = CTkLabel(master=videos_filter_menu_frame, text='Filter', text_color='#1f61a5', anchor='w',
-                                    justify='left', font=("Arial Bold", 18))
-videos_filter_menu_title.pack(padx=10)
-videos_search_course_label = CTkLabel(master=videos_filter_menu_frame, text='Course', width=200)
-videos_search_course_label.pack(padx=10)
-videos_search_course_box = CTkComboBox(master=videos_filter_menu_frame, border_color="#1f61a5",
-                                       border_width=1, values=filter_course_table, state='readonly')
-videos_search_course_box.pack(padx=10)
-videos_search_branch_label = CTkLabel(master=videos_filter_menu_frame, text='Branch', width=200)
-videos_search_branch_label.pack(padx=10)
-videos_search_branch_box = CTkComboBox(master=videos_filter_menu_frame, border_color="#1f61a5",
-                                       border_width=1, values=filter_branch_table, state='readonly')
-videos_search_branch_box.pack(padx=10)
-videos_search_year_label = CTkLabel(master=videos_filter_menu_frame, text='Year', width=200)
-videos_search_year_label.pack(padx=10)
-videos_search_year_box = CTkComboBox(master=videos_filter_menu_frame, border_color="#1f61a5",
-                                     border_width=1, values=filter_year_table, state='readonly',
-                                     command=show_videos_filter_subjects)
-videos_search_year_box.pack(padx=10)
-videos_search_subject_label = CTkLabel(master=videos_filter_menu_frame, text='Subject', width=200)
-videos_search_subject_label.pack(padx=10)
-videos_search_subject_box = CTkComboBox(master=videos_filter_menu_frame, border_color="#1f61a5",
-                                        border_width=1, values=filter_subject_table, state='readonly')
-videos_search_subject_box.pack(padx=10)
-videos_search_module_label = CTkLabel(master=videos_filter_menu_frame, text='Module', width=200)
-videos_search_module_label.pack(padx=10)
-videos_search_module_box = CTkComboBox(master=videos_filter_menu_frame, border_color="#1f61a5",
-                                       border_width=1, values=filter_module_table, state='readonly')
-videos_search_module_box.pack(padx=10)
-videos_search_button = CTkButton(master=videos_filter_menu_frame, text='  Search', image=search_img,
-                                 command=lambda: search_subjects('videos'))
-videos_search_button.pack(pady=10)
-videos_search_error_label = CTkLabel(master=videos_filter_menu_frame, text='', text_color="#FF0000")
-videos_search_error_label.pack()
-
-upload_course_table = ['B.Tech']
-upload_branch_table = ['CSE', 'Other']
-upload_year_table = ['1st year', '2nd year', '3rd year', '4th year']
-upload_subject_table = ['']
-upload_module_table = ['1', '2', '3', '4', '5']
-
-videos_upload_menu_title = CTkLabel(master=videos_upload_menu_frame, text='Upload', text_color='#1f61a5', anchor='w',
-                                    justify='left', font=("Arial Bold", 18))
-videos_upload_menu_title.pack(padx=10)
-videos_upload_filename_label = CTkLabel(master=videos_upload_menu_frame, text='File name', width=200)
-videos_upload_filename_label.pack()
-videos_upload_filename_entry = CTkEntry(master=videos_upload_menu_frame, border_color="#1f61a5",
-                                        border_width=1, )
-videos_upload_filename_entry.pack()
-videos_upload_course_label = CTkLabel(master=videos_upload_menu_frame, text='Course', width=200)
-videos_upload_course_label.pack(padx=10)
-videos_upload_course_box = CTkComboBox(master=videos_upload_menu_frame, border_color="#1f61a5",
-                                       border_width=1, state='readonly', values=upload_course_table)
-videos_upload_course_box.pack(padx=10)
-videos_upload_branch_label = CTkLabel(master=videos_upload_menu_frame, text='Branch', width=200)
-videos_upload_branch_label.pack(padx=10)
-videos_upload_branch_box = CTkComboBox(master=videos_upload_menu_frame, border_color="#1f61a5",
-                                       border_width=1, state='readonly', values=upload_branch_table)
-videos_upload_branch_box.pack(padx=10)
-videos_upload_year_label = CTkLabel(master=videos_upload_menu_frame, text='Year', width=200)
-videos_upload_year_label.pack(padx=10)
-videos_upload_year_box = CTkComboBox(master=videos_upload_menu_frame, border_color="#1f61a5",
-                                     border_width=1, values=upload_year_table, state='readonly',
-                                     command=show_videos_upload_subjects)
-videos_upload_year_box.pack(padx=10)
-videos_upload_subject_label = CTkLabel(master=videos_upload_menu_frame, text='Subject', width=200)
-videos_upload_subject_label.pack(padx=10)
-videos_upload_subject_box = CTkComboBox(master=videos_upload_menu_frame, border_color="#1f61a5",
-                                        border_width=1, state='readonly', values=upload_subject_table)
-videos_upload_subject_box.pack(padx=10)
-videos_upload_module_label = CTkLabel(master=videos_upload_menu_frame, text='Module', width=200)
-videos_upload_module_label.pack(padx=10)
-videos_upload_module_box = CTkComboBox(master=videos_upload_menu_frame, border_color="#1f61a5",
-                                       border_width=1, state='readonly', values=upload_module_table)
-videos_upload_module_box.pack(padx=10)
-videos_upload_button = CTkButton(master=videos_upload_menu_frame, text='  Upload', image=upload_img,
-                                 command=lambda: upload_video())
-videos_upload_button.pack(pady=10)
-videos_upload_error_label = CTkLabel(master=videos_upload_menu_frame, text='', text_color="#FF0000")
-videos_upload_error_label.pack()
 
 
 # user signup
