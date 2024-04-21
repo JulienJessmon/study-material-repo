@@ -300,6 +300,23 @@ def login():
 
 
 def logout():
+    for frame in teacher_pdf_display.winfo_children():
+        frame.destroy()
+    for frame in student_pdf_display.winfo_children():
+        frame.destroy()
+    for frame in teacher_qb_display.winfo_children():
+        frame.destroy()
+    for frame in student_qb_display.winfo_children():
+        frame.destroy()
+    for frame in student_video_display.winfo_children():
+        frame.destroy()
+    for frame in student_video_display.winfo_children():
+        frame.destroy()
+    notes_search_course_box.set("")
+    notes_search_branch_box.set("")
+    notes_search_year_box.set("")
+    notes_search_subject_box.set("")
+    notes_search_module_box.set("")
     logged_in_menu_container.pack_forget()
     main_menu.pack_forget()
     menu_tabs.pack_forget()
