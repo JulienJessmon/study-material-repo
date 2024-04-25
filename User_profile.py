@@ -1,11 +1,30 @@
+import os,urllib
+import requests
+from io import BytesIO
 import firebase_admin
+import pyrebase
 from google.cloud.firestore_v1.base_query import FieldFilter
-from firebase_admin import credentials,firestore
+from firebase_admin import credentials,firestore,storage
+from PIL import Image
+from customtkinter import filedialog
 cred = credentials.Certificate(r"D:\Athul\Miniproject\Main_prgm\Firebase_PvtKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
-collection_ref = db.collection('userCollection')
+config={
+    "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
+    "authDomain": "study-material-repo.firebaseapp.com",
+    "projectId": "study-material-repo",
+    'storageBucket': "study-material-repo.appspot.com",
+    "messagingSenderId": "291006521607",
+    "appId": "1:291006521607:web:7196317a36dcf6f0e365a2",
+    "measurementId": "G-6EGQ548K06",
+    "databaseURL": ""
+}
 
+firebase_admin.initialize_app(cred,config)
+firebase=pyrebase.initialize_app(config)
+db=firestore.client()
+storage=firebase.storage()
+collection_ref = db.collection('userCollection')
+#bucket=storage.bucket()
 class UserProfile():#ctk.Ctk):
     username=[]     #Name
     user_type={}    #Name and Type
@@ -20,21 +39,70 @@ class UserProfile():#ctk.Ctk):
           #  self.user_type[name]=userdata.get("UserType")
         #print(self.username,self.user_type)
     def setData(self):
-        field_filter=FieldFilter('Username','==','j1')
+        field_filter=FieldFilter('Username','==','j1')  #Filter to user j1
         query1=db.collection('userCollection').where(filter=field_filter)
         doc=query1.get()
         data=doc[0].to_dict()
-        self.type=data['UserType']
+        self.type=data['UserType']      #Set user type
     def video(self):
-        field_filter = FieldFilter('uploadedBy', '==', 'j1')
-        query1 = db.collection('videoData').where(filter=field_filter)
+        field_filter = FieldFilter('uploadedBy', '==', 'j1')    #Filter
+        query1 = db.collection('videoData').where(filter=field_filter)  #Video data
         doc=query1.get()
         for i in doc:
             i=i.to_dict()
             self.data.append(i['filename'])
         print(self.data)
 
+    def PDFs(self):
+        field_filter = FieldFilter('uploadedBy', '==', 'j1')  # Filter
+        query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
+        doc = query1.get()
+        for i in doc:
+            i = i.to_dict()
+            self.data.append(i['filename'])
+        print(self.data)
+
+    def setProfileImage(self):
+            field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
+            query1 = db.collection('userCollection').where(filter=field_filter)
+            doc=query1.get()
+            document_ids = [i.id for i in doc]
+            id=document_ids[0]
+            #print('Document IDs:', document_ids)
+            doc = query1.get()
+            #data = doc[0].to_dict()
+            print(doc)
+            path = filedialog.askopenfilename(filetypes=[(".PNG Files", "*.png")])
+            if path:
+                self.file_name = os.path.basename(path)
+                self.img = Image.open(path)
+                # Now, img is your uploaded image
+                # You can perform operations on the image here
+                print("Image shown successfully!")
+                print(type(self.img))
+                print(path)
+                print(self.file_name)
+            imgbytes=BytesIO()
+            self.img.save(imgbytes,format='PNG')
+            imgbytes.seek(0)
+            #self.img.show()
+            storage.child(f'Profile_Pics/'+self.file_name).put(imgbytes,content_type='image/png')
+            self.img_url=storage.child(f'Profile_Pics/Profilepic.png').get_url(None)    #DO CHANGE THE NAME TO THE ONE CHOSEN
+            print(self.img_url)
+            query1 = db.collection('userCollection').document(id)
+            query1.update({"image_url":self.img_url})
         #col_ref=db.collection('userCollection').document(doc)
+    def getImage(self):
+        field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
+        query1 = db.collection('userCollection').where(filter=field_filter)
+        doc = query1.get()
+        document_ids = [i.id for i in doc]
+        id = document_ids[0]
+        query1=db.collection('userCollection').document(id)
+        doc=query1.get()
+        #print(doc.to_dict())
+        url=doc.to_dict()['image_url']      #i cant download the image back from firebase to pillow Image class
+        print(url)
 
 
     def __init__(self,name,password):
@@ -45,5 +113,7 @@ class UserProfile():#ctk.Ctk):
         print(self.name,self.password)
         self.setData()
         print(self.type)
-        self.video()
+        #self.video()
+        #self.setProfileImage()
+        self.getImage()
 UserProfile('j1','Password@234')
