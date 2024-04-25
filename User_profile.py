@@ -43,6 +43,8 @@ class UserProfile():#ctk.Ctk):
         query1=db.collection('userCollection').where(filter=field_filter)
         doc=query1.get()
         data=doc[0].to_dict()
+        document_ids = [i.id for i in doc]
+        self.id = document_ids[0]
         self.type=data['UserType']      #Set user type
     def video(self):
         field_filter = FieldFilter('uploadedBy', '==', 'j1')    #Filter
@@ -86,23 +88,33 @@ class UserProfile():#ctk.Ctk):
             self.img.save(imgbytes,format='PNG')
             imgbytes.seek(0)
             #self.img.show()
-            storage.child(f'Profile_Pics/'+self.file_name).put(imgbytes,content_type='image/png')
-            self.img_url=storage.child(f'Profile_Pics/Profilepic.png').get_url(None)    #DO CHANGE THE NAME TO THE ONE CHOSEN
+            storage.child(f'Profile_Pics/'+self.id).put(imgbytes,content_type='image/png')
+            self.img_url=storage.child(f'Profile_Pics/'+self.id).get_url(None)    #DO CHANGE THE NAME TO THE ONE CHOSEN
             print(self.img_url)
             query1 = db.collection('userCollection').document(id)
             query1.update({"image_url":self.img_url})
         #col_ref=db.collection('userCollection').document(doc)
     def getImage(self):
+
         field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
         query1 = db.collection('userCollection').where(filter=field_filter)
         doc = query1.get()
-        document_ids = [i.id for i in doc]
-        id = document_ids[0]
-        query1=db.collection('userCollection').document(id)
+        #document_ids = [i.id for i in doc]
+        #id = document_ids[0]
+        field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
+        query1 = db.collection('userCollection').document(self.id)
         doc=query1.get()
-        #print(doc.to_dict())
-        url=doc.to_dict()['image_url']      #i cant download the image back from firebase to pillow Image class
-        print(url)
+        self.img_url=doc.to_dict()['image_url']
+        print(self.img_url)
+        path='Profile_Pics/'+self.id
+        response = requests.get(self.img_url, stream=True)
+
+        if response.status_code == 200:
+            image_data = response.content
+            image = Image.open(BytesIO(image_data))
+
+        image = Image.open(BytesIO(image_data))
+        image.show()
 
 
     def __init__(self,name,password):
@@ -114,6 +126,6 @@ class UserProfile():#ctk.Ctk):
         self.setData()
         print(self.type)
         #self.video()
-        #self.setProfileImage()
+        self.setProfileImage()
         self.getImage()
 UserProfile('j1','Password@234')
