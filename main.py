@@ -64,9 +64,9 @@ CSE_subjects = {
                  'Professionsal Communication - HUT 102'],
     '2nd year': ['Discrete Mathematical Structures - MAT 203', 'Data Structures - CST 201',
                  'Logic System Design - CST 203', 'Sustainable Engineering - MNC 202',
-                 'Design and Engineering - EST 200', 'Professional Ethics - HUT 200', 'Graph Theory - MAT 206',
+                 'Design and Engineering - EST 200', 'Professional Ethics - HUT 200','Object Oriented Programming Using Java - CST 205', 'Graph Theory - MAT 206',
                  'Computer Organization and Architecture - CST 202', 'Database Management System - CST 204',
-                 'Operating System - CST 206', 'Design and Engineering - EST 200', 'Constitution of India - MNC 202'],
+                 'Operating System - CST 206', 'Constitution of India - MNC 202'],
     '3rd year': ['Computer Networks - CST 303', 'System Software - CST 305',
                  'Microprocessors and Microcontrollers - CST 307', 'Management of Software Systems - CST 309',
                  'Disaster Management - MCN 301', 'Formal Languages and Automata Theory - CST 301',
@@ -86,6 +86,7 @@ logo_img_data = Image.open(os.path.join(img_dir, 'logo.png'))
 search_img_data = Image.open(os.path.join(img_dir, 'search.png'))
 upload_img_data = Image.open(os.path.join(img_dir, 'upload.png'))
 upvote_img_data = Image.open(os.path.join(img_dir, 'upvote.png'))
+downvote_img_data = Image.open(os.path.join(img_dir, 'downvote.png'))
 download_img_data = Image.open(os.path.join(img_dir, 'download.png'))
 
 user_img = CTkImage(dark_image=user_img_data, light_image=user_img_data, size=(17, 17))
@@ -95,6 +96,7 @@ logo_img = CTkImage(dark_image=logo_img_data, light_image=logo_img_data, size=(5
 search_img = CTkImage(dark_image=search_img_data, light_image=search_img_data, size=(17, 17))
 upload_img = CTkImage(dark_image=upload_img_data, light_image=upload_img_data, size=(17, 17))
 upvote_img = CTkImage(dark_image=upvote_img_data, light_image=upvote_img_data, size=(17, 17))
+downvote_img = CTkImage(dark_image=downvote_img_data, light_image=downvote_img_data, size=(17, 17))
 download_img = CTkImage(dark_image=download_img_data, light_image=download_img_data, size=(17, 17))
 
 current_search_dir = ''
@@ -112,6 +114,137 @@ admin_logged = False
 
 loggedInUser = ''
 current_user_type = ''
+
+collection_ref = db.collection('qna')
+dict_ids = {}
+dict_qns = {}
+list_qns = []
+a = {}
+r = 0
+current_q = ""
+
+
+def empty_frame(frame):  # Empties a frame
+    for widget in frame.winfo_children():
+        widget.destroy()
+
+
+# Example usage
+def answer_gui(rframe):  # function to show answer in GUI....needs modification
+    dialog = CTkInputDialog(text="Enter data:", title="Test")
+    data = dialog.get_input()
+    if data:
+        CTkLabel(master=rframe)
+
+
+def getqns():  # gets qns and stores them in dict_qns and list_qns..dictids has id and serial number
+    qns = collection_ref.stream()
+    query = collection_ref.get()
+    document_ids = [doc.id for doc in query]
+    i = 0
+    for qn_doc in qns:
+        qn_data = qn_doc.to_dict()
+
+        question = qn_data.get('qn', '')
+        dict_qns[document_ids[i]] = question
+        dict_ids[i + 1] = document_ids[i]
+        i += 1
+        list_qns.append(question)
+
+
+def post_qn(q):  # posts qn into firebase
+    doc_ref = db.collection('qna').document()
+    doc_ref.set({'qn': q, 'ans': ''})
+    getqns()
+
+
+def get_ans(id):  # gets answer from firebase based on doc id...returns as list
+    # print(id)
+    doc_ref = db.collection('qna').document(id)
+    ans_snapshot = doc_ref.get()
+    if ans_snapshot.exists:
+        try:
+            data = ans_snapshot.get('ans')
+            if data and isinstance(data, list):
+                '''for answer in data:
+                    print(answer)'''
+                return (data)
+        except KeyError:
+            print("Error")      #Show error in frame
+    else:
+        print('failed')
+        return []
+
+
+def answer_qn():  # Answer a qn
+    c = current_q
+    for i in dict_ids:
+        if dict_ids[i] == c:
+            ID=dict_ids[i]
+            break
+    a = get_ans(ID)
+    answer = ranstextbox.get()
+    ranstextbox.delete(0,END)
+    empty_frame(raframe)
+    if a == None:
+        a=[answer]
+    else:
+        a.append(answer)
+    for i in a:
+        message_frame = CTkFrame(master=raframe, fg_color='#e4e5f1')
+        message_frame.pack(padx=5, pady=5, side=TOP, anchor=NW)
+        message_text_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
+        message_text_frame.pack(padx=5, pady=5, side='left')
+        CTkLabel(master=message_text_frame, text="Username", font=('Arial Bold', 12), text_color='#1f61a5').pack(
+            side=TOP,anchor=NW)
+        CTkLabel(master=message_text_frame, font=('Arial Bold', 10), text=i).pack(side=TOP,anchor=NW)
+        message_upvote_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
+        message_upvote_frame.pack(side='right', padx=10, pady=5)
+        CTkButton(master=message_upvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
+                  image=upvote_img).pack(
+            side=TOP)
+        CTkLabel(master=message_upvote_frame, text='0', font=('Arial Bold', 10), text_color='#1f61a5').pack(side=BOTTOM)
+    doc_ref = db.collection('qna').document(ID)
+    doc_ref.update({'ans': a})
+
+    # print(ans)'''
+
+
+def fetch_data(qn,i):  # fetches data to put in rframe..qns and answers
+    # print(rframe)
+    # print(qn)
+    scrolling_frame_1.pack_forget()
+    post_button.pack_forget()
+    back_button_frame.pack(fill="x")
+    rframe.pack(side='right', fill='both', expand=True)
+    empty_frame(raframe)
+    global current_q
+    for id, q in dict_qns.items():
+        #print(id,q)
+        if q == qn:
+            current_q = id
+            break
+    rqframe.configure(text=qn)
+    ans = get_ans(id)
+    if ans is None:
+        CTkLabel(master=raframe, text='No Answer Yet',text_color='#ff0000',anchor='e').pack(padx=10,pady=10)
+    else:
+        for i in ans:
+            message_frame = CTkFrame(master=raframe, fg_color='#e4e5f1')
+            message_frame.pack(padx=5, pady=5, side=TOP, anchor=NW)
+            message_text_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
+            message_text_frame.pack(padx=5, pady=5, side='left')
+            CTkLabel(master=message_text_frame, text="Username", font=('Arial Bold', 12), text_color='#1f61a5').pack(
+                side=TOP, anchor=NW)
+            CTkLabel(master=message_text_frame, font=('Arial Bold', 10), text=i).pack(side=TOP, anchor=NW)
+            message_upvote_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
+            message_upvote_frame.pack(side='right', padx=10, pady=5)
+            CTkButton(master=message_upvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
+                      image=upvote_img).pack(
+                side=TOP)
+            CTkLabel(master=message_upvote_frame, text='0', font=('Arial Bold', 10), text_color='#1f61a5').pack(
+                side=BOTTOM)
+
 
 
 def select_pdf_file():
@@ -288,6 +421,7 @@ def login():
                 next_page(login_page, main_menu)
                 logged_in_menu_container.pack(expand=True, fill='both')
                 main_menu.pack(expand=True, fill='both')
+                current_user_title.configure(text=loggedInUser)
                 create_user_tab_check()
                 # exit(0)   exit the function if login is successful
 
@@ -317,11 +451,21 @@ def logout():
     notes_search_year_box.set("")
     notes_search_subject_box.set("")
     notes_search_module_box.set("")
+    notes_upload_filename_entry.delete(0, END)
+    notes_upload_type_box.set("")
+    notes_upload_course_box.set("")
+    notes_upload_branch_box.set("")
+    notes_upload_year_box.set("")
+    notes_upload_subject_box.set("")
+    notes_upload_subject_box.set("")
+    if notes_upload_menu_frame_container.winfo_ismapped():
+        notes_upload_menu_frame_container.pack_forget()
     logged_in_menu_container.pack_forget()
     main_menu.pack_forget()
     menu_tabs.pack_forget()
     id_entry.delete(0, END)
     password_entry.delete(0, END)
+    back_to_qframe()
     login_page.pack(expand=True, fill='both')
 
 
@@ -357,6 +501,7 @@ def user_details_add(signup_id_entry, signup_password_entry, signup_user_type_bo
 
             doc_ref = db.collection('userCollection').document()
             doc_ref.set(data)
+            signup_error_label.configure(text="")
 
             # print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
         if flag == 0:
@@ -429,87 +574,205 @@ def display_note_menu():
     for name in notes_file_names_teacher:
         display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_pdf_display
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+        title_frame = CTkFrame(master=frame,fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                  text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+        display_title.pack(side=TOP,padx=5,anchor = W)
+        download_frame = CTkFrame(master=frame,fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
                                             command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',
-                                          hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button.pack(pady=(5,0), padx=5,side=TOP)
+        display_download_count = CTkLabel(master=download_frame,text="0",font=("Arial Bold", 14),text_color='#1f61a5')
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame,fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
+        display_downvote_button.pack(side=TOP,pady=(5,0), padx=5)
+        display_downvote_count = CTkLabel(master=downvote_frame,text="0",font=("Arial Bold", 14),text_color='#1f61a5')
+        display_downvote_count.pack(side=BOTTOM)
+        upvote_frame = CTkFrame(master=frame,fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_upvote_button.pack(side=TOP,pady=(5,0), padx=5)
+        display_upvote_count = CTkLabel(master=upvote_frame,text="0",font=("Arial Bold", 14),text_color='#1f61a5')
+        display_upvote_count.pack(side=BOTTOM)
     for name in notes_file_names_student:
         display_name = name.replace("Notes/" + current_search_dir + "Student/", "")
         parent_frame = student_pdf_display
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
         frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                  text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+        display_title.pack(side=TOP, padx=5, anchor=W)
+        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
                                             command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',
-                                          hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
+        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_downvote_count.pack(side=BOTTOM)
+        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
+        display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_teacher:
         display_name = name.replace("Question Banks/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_qb_display
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
         frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                  text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+        display_title.pack(side=TOP, padx=5, anchor=W)
+        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
                                             command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',
-                                          hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
+        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_downvote_count.pack(side=BOTTOM)
+        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
+        display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_student:
         display_name = name.replace("Question Banks/" + current_search_dir + "Student/", "")
         parent_frame = student_qb_display
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
         frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                  text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+        display_title.pack(side=TOP, padx=5, anchor=W)
+        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
                                             command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',
-                                          hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
+        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_downvote_count.pack(side=BOTTOM)
+        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
+        display_upvote_count.pack(side=BOTTOM)
     for name in videos_file_names_teacher:
         display_name = name.replace("Videos/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_video_display
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
         frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                  text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+        display_title.pack(side=TOP, padx=5, anchor=W)
+        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
                                             command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',
-                                          hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
+        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_downvote_count.pack(side=BOTTOM)
+        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
+        display_upvote_count.pack(side=BOTTOM)
     for name in videos_file_names_student:
         display_name = name.replace("Videos/" + current_search_dir + "Student/", "")
         parent_frame = student_video_display
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
         frame.pack(fill='x', pady=5)
-        display_title = CTkLabel(master=frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
                                  text_color='#1f61a5')
-        display_title.pack(side=LEFT, pady=5, padx=5)
-        display_download_button = CTkButton(master=frame, width=40, height=40, text='', image=download_img,
+        display_title.pack(side=TOP, padx=5, anchor=W)
+        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
                                             command=lambda n=name: download_pdf(n))
-        display_download_button.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=frame, width=40, height=40, text='',
-                                          hover_color='#7C0A02', image=upvote_img)
-        display_upvote_button.pack(side=RIGHT, pady=5, padx=5)
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
+        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_downvote_count.pack(side=BOTTOM)
+        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
+        display_upvote_count.pack(side=BOTTOM)
 
 
 def list_files_in_folder(folder_path):
@@ -585,8 +848,8 @@ def upload_menu_toggle():
 
 window = CTk(fg_color='#e7e7f4')
 window.title('Study Material Repository')
-window.geometry('800x500')
-window.minsize(800, 500)
+window.geometry('800x550')
+window.minsize(800, 550)
 set_appearance_mode('light')
 
 # Login page
@@ -641,6 +904,8 @@ top_menu.pack(fill='x')
 logout_button = CTkButton(master=top_menu, fg_color='#ffffff', text_color='#3b8ed0', text='Logout',
                           font=("Arial Bold", 12), corner_radius=25, command=lambda: logout())
 logout_button.pack(side='right', padx=5, pady=5)
+current_user_title = CTkLabel(master=top_menu,font=("Arial Bold", 14),text_color="#fafafa", anchor="w", justify="left",text="  Username", image=user_img, compound='left')
+current_user_title.pack(side='left',padx=20)
 
 # Buttons menu
 main_menu_title = CTkLabel(master=main_menu, text="Choose Tab")
@@ -766,7 +1031,7 @@ notes_search_error_label = CTkLabel(master=notes_filter_menu_frame, text='', tex
 notes_search_error_label.pack()
 
 upload_course_table = ['B.Tech']
-upload_branch_table = ['CSE', 'Other']
+upload_branch_table = ['CSE']
 upload_year_table = ['1st year', '2nd year', '3rd year', '4th year']
 upload_subject_table = ['']
 upload_module_table = ['1', '2', '3', '4', '5']
@@ -837,12 +1102,87 @@ notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', tex
 notes_upload_error_label.pack()
 
 
+# qna
+
+def back_to_qframe():
+    rframe.pack_forget()
+    back_button_frame.pack_forget()
+    ranstextbox.delete(0,END)
+    scrolling_frame_1.pack(side='bottom', fill='both', expand=True)
+    post_button.pack(pady=10)
+
+
+def refresh_questions():
+    for i in dict_ids:
+        q = dict_qns[dict_ids[i]]
+        frame = CTkFrame(master=scrolling_frame_1, fg_color='#e4e5f1')
+        frame.pack(fill='x', pady=5, padx=5)
+        CTkLabel(master=frame, text=q, anchor='w', text_color="#1f61a5", justify="left",
+                 font=("Arial Bold", 14)).pack(side='left', padx=10, pady=10)
+
+        b = CTkButton(master=frame, text='View', hover=True, corner_radius=25,
+                      command=lambda text=q, id=i: fetch_data(text, id))
+        ##b.bind("<Button-1>", lambda event, text=q: fetch_data(text))
+        b.pack(side=RIGHT, padx=20, pady=5)
+        b = CTkButton(master=scrolling_frame_1)
+
+def button_click_event():
+    # buttons in scrolling frame and their event handling
+    global r
+    dialog = CTkInputDialog(text="Enter Question:", title="Test")
+    data = dialog.get_input()
+    if data:
+        doc_ref = db.collection('qna').document()
+        doc_ref.set({'qn': data, 'ans': ''})
+        getqns()
+        refresh_questions()
+        r += 1
+
+qna_display_frame = CTkFrame(master=qna_tab, fg_color='#e7e7f4')
+qna_display_frame.pack(expand=True,fill='both')
+post_button = CTkButton(master=qna_display_frame, text='Post Question', corner_radius=50, hover=True,command=button_click_event)
+post_button.pack(pady=10)
+rframe = CTkFrame(master=qna_display_frame, width=400,fg_color="#fafafa")
+
+back_button_frame=CTkFrame(master=qna_display_frame,fg_color='#e7e7f4')
+back_button = CTkButton(master=back_button_frame, text="Back",corner_radius=20, command=lambda: back_to_qframe())
+back_button.pack(pady=10)
+rqframe = CTkLabel(master=rframe, text="",fg_color='#fafafa',text_color="#1f61a5", justify="left",
+                          font=("Arial Bold", 14), width=400)
+rqframe.pack(fill='x')
+raframe = CTkScrollableFrame(master=rframe,fg_color='#fafafa')
+raframe.pack(expand=True,fill='both')
+ransbox = CTkFrame(master=rframe, width=400)
+ransbox.pack(fill='x')
+ranstextbox = CTkEntry(master=ransbox,width=225, fg_color="#EEEEEE",
+                          border_color="#1f61a5",
+                          border_width=1, text_color="#000000", corner_radius=25)
+ranstextbox.pack(side=LEFT, expand=True,fill='x',pady=5,padx=5)
+ransbutton = CTkButton(master=ransbox, text='Answer',corner_radius=25, command=lambda: answer_qn())
+ransbutton.pack(side=LEFT,pady=5,padx=5)
+scrolling_frame_1 = CTkScrollableFrame(master=qna_display_frame,width=400,
+                                              fg_color='#fafafa', scrollbar_button_color='#d2d3db')  # fg_color='#b2ccf2')
+scrolling_frame_1.pack(side='left', fill='both', expand=True)
+getqns()  # call to get/update qns
+
+for i in dict_ids:
+    q = dict_qns[dict_ids[i]]
+    frame = CTkFrame(master=scrolling_frame_1, fg_color='#e4e5f1')
+    frame.pack(fill='x', pady=5,padx=5)
+    CTkLabel(master=frame, text=q, anchor='w', text_color="#1f61a5", justify="left",
+                          font=("Arial Bold", 14)).pack(side='left', padx=10, pady=10)
+
+    b = CTkButton(master=frame, text='View', hover=True,corner_radius=25, command=lambda text=q ,id=i:fetch_data(text,id))
+    ##b.bind("<Button-1>", lambda event, text=q: fetch_data(text))
+    b.pack(side=RIGHT, padx=20, pady=5)
+    b = CTkButton(master=scrolling_frame_1)
+    r = r + 1
 
 
 # user signup
 def create_user_tab_check():
     global admin_logged
-    if current_user_type == 'Admin':
+    if current_user_type == 'Admin' and not admin_logged:
         admin_logged = True
         signup_tab = menu_tabs.add('Create User')
         signup_page = CTkFrame(master=signup_tab, fg_color='#e7e7f4')
@@ -858,23 +1198,23 @@ def create_user_tab_check():
         signup_title_label = CTkLabel(master=signup_login_frame, text='Create User', text_color='#1f61a5', anchor='w',
                                       justify='left',
                                       font=("Arial Bold", 24))
-        signup_title_label.pack(anchor="w", pady=(50, 5), padx=(25, 0))
+        signup_title_label.pack(anchor="w", pady=(20, 5), padx=(25, 0))
 
         signup_id_label = CTkLabel(master=signup_login_frame, text='  User ID', text_color="#1f61a5", anchor="w",
                                    justify="left",
                                    font=("Arial Bold", 14), image=user_img, compound="left")
-        signup_id_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
+        signup_id_label.pack(anchor="w", pady=(15, 0), padx=(25, 0))
         signup_id_entry = CTkEntry(master=signup_login_frame, width=225, fg_color="#EEEEEE", border_color="#1f61a5",
-                                   border_width=1,
+                                   border_width=1,corner_radius=20,
                                    text_color="#000000")
         signup_id_entry.pack(anchor="w", padx=(25, 0))
 
         signup_password_label = CTkLabel(master=signup_login_frame, text='  Password', text_color="#1f61a5", anchor="w",
                                          justify="left",
                                          font=("Arial Bold", 14), image=password_img, compound="left")
-        signup_password_label.pack(anchor="w", pady=(20, 0), padx=(25, 0))
+        signup_password_label.pack(anchor="w", pady=(15, 0), padx=(25, 0))
         signup_password_entry = CTkEntry(master=signup_login_frame, show='*', width=225, fg_color="#EEEEEE",
-                                         border_color="#1f61a5",
+                                         border_color="#1f61a5",corner_radius=20,
                                          border_width=1, text_color="#000000")
         signup_password_entry.pack(anchor="w", padx=(25, 0))
         signup_show_password_box = CTkCheckBox(master=signup_login_frame, text="Show Password", border_width=1,
@@ -892,15 +1232,15 @@ def create_user_tab_check():
         user_types = ['Student', 'Teacher', 'Admin']
 
         signup_user_type_box = CTkComboBox(master=signup_login_frame, width=225, fg_color="#EEEEEE",
-                                           border_color="#1f61a5",
+                                           border_color="#1f61a5",corner_radius=20,
                                            border_width=1, text_color="#000000", values=user_types, state='readonly')
         signup_user_type_box.pack(anchor="w", padx=(25, 0))
 
         signup_error_label = CTkLabel(master=signup_login_frame, text="", text_color="#FF0000")
         signup_error_label.pack(anchor="w", padx=(25, 0))
 
-        signup_button = CTkButton(master=signup_login_frame, text="Login", fg_color="#1f61a5", hover_color="#19429d",
-                                  font=("Arial Bold", 12), text_color="#ffffff", width=225,
+        signup_button = CTkButton(master=signup_login_frame, text="Create User", fg_color="#1f61a5", hover_color="#19429d",
+                                  font=("Arial Bold", 12), text_color="#ffffff", width=225,corner_radius=20,
                                   command=lambda: user_details_add(signup_id_entry, signup_password_entry,
                                                                    signup_user_type_box, signup_error_label))
         signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
