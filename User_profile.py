@@ -1,4 +1,4 @@
-import os,urllib
+import os
 import requests
 from io import BytesIO
 import firebase_admin
@@ -29,15 +29,8 @@ class UserProfile():#ctk.Ctk):
     username=[]     #Name
     user_type={}    #Name and Type
     data=[]
-    #def data(self):
-        #un=collection_ref.get()
-        #query=
-       # for i in un:
-           # userdata=i.to_dict()
-           # name=userdata.get("Username")
-           # self.username.append(name)
-          #  self.user_type[name]=userdata.get("UserType")
-        #print(self.username,self.user_type)
+    videodata=[]
+    notedata=[]
     def setData(self):
         field_filter=FieldFilter('Username','==','j1')  #Filter to user j1
         query1=db.collection('userCollection').where(filter=field_filter)
@@ -46,14 +39,15 @@ class UserProfile():#ctk.Ctk):
         document_ids = [i.id for i in doc]
         self.id = document_ids[0]
         self.type=data['UserType']      #Set user type
+
     def video(self):
         field_filter = FieldFilter('uploadedBy', '==', 'j1')    #Filter
         query1 = db.collection('videoData').where(filter=field_filter)  #Video data
         doc=query1.get()
         for i in doc:
             i=i.to_dict()
-            self.data.append(i['filename'])
-        print(self.data)
+            self.videodata.append(i['filename'])
+        print(self.videodata)
 
     def PDFs(self):
         field_filter = FieldFilter('uploadedBy', '==', 'j1')  # Filter
@@ -61,8 +55,8 @@ class UserProfile():#ctk.Ctk):
         doc = query1.get()
         for i in doc:
             i = i.to_dict()
-            self.data.append(i['filename'])
-        print(self.data)
+            self.notedata.append(i['filename'])
+        print(self.notedata)
 
     def setProfileImage(self):
             field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
@@ -73,7 +67,7 @@ class UserProfile():#ctk.Ctk):
             #print('Document IDs:', document_ids)
             doc = query1.get()
             #data = doc[0].to_dict()
-            print(doc)
+            #print(doc)
             path = filedialog.askopenfilename(filetypes=[(".PNG Files", "*.png")])
             if path:
                 self.file_name = os.path.basename(path)
@@ -87,39 +81,25 @@ class UserProfile():#ctk.Ctk):
             imgbytes=BytesIO()
             self.img.save(imgbytes,format='PNG')
             imgbytes.seek(0)
-            #self.img.show()
             storage.child(f'Profile_Pics/'+self.id).put(imgbytes,content_type='image/png')
             self.img_url=storage.child(f'Profile_Pics/'+self.id).get_url(None)    #DO CHANGE THE NAME TO THE ONE CHOSEN
-            print(self.img_url)
             query1 = db.collection('userCollection').document(id)
             query1.update({"image_url":self.img_url})
-        #col_ref=db.collection('userCollection').document(doc)
     def getImage(self):
 
-        field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
-        query1 = db.collection('userCollection').where(filter=field_filter)
-        doc = query1.get()
-        #document_ids = [i.id for i in doc]
-        #id = document_ids[0]
         field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
         query1 = db.collection('userCollection').document(self.id)
         doc=query1.get()
         self.img_url=doc.to_dict()['image_url']
-        print(self.img_url)
-        path='Profile_Pics/'+self.id
         response = requests.get(self.img_url, stream=True)
 
         if response.status_code == 200:
             image_data = response.content
             image = Image.open(BytesIO(image_data))
-
-        image = Image.open(BytesIO(image_data))
-        image.show()
+        #image to be used is in image
 
 
     def __init__(self,name,password):
-        #self.title('')
-        #self.data()
         self.name=name
         self.password=password
         print(self.name,self.password)
@@ -128,4 +108,4 @@ class UserProfile():#ctk.Ctk):
         #self.video()
         self.setProfileImage()
         self.getImage()
-UserProfile('j1','Password@234')
+UserProfile('j1','Password@234')        
