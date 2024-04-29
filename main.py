@@ -592,7 +592,7 @@ def get_note_value(value_type, note_type, user_type, note_name):
         print('hi')
 
 
-def upvote_note(note_type, user_type, note_name, upvote_count_frame):
+def upvote_note(note_type, user_type, note_name):
     if note_type == 'Notes':
         check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
         docs = db.collection('pdfData').stream()
@@ -615,7 +615,6 @@ def upvote_note(note_type, user_type, note_name, upvote_count_frame):
                         new_upvotes = doc_data.get('upvotes') + 1
                     user_doc_ref.update({'upvotedNotes': array_field})
                     db.collection('pdfData').document(doc.id).update({'upvotes': new_upvotes})
-                    upvote_count_frame.configure(text=str(new_upvotes))
                     break
                 else:
                     new_array = [str(doc.id)]
@@ -642,7 +641,6 @@ def upvote_note(note_type, user_type, note_name, upvote_count_frame):
                         new_upvotes = doc_data.get('upvotes') + 1
                     user_doc_ref.update({'upvotedNotes': array_field})
                     db.collection('pdfData').document(doc.id).update({'upvotes': new_upvotes})
-                    upvote_count_frame.configure(text=str(new_upvotes))
                 else:
                     new_array = [str(doc.id)]
                     user_doc_ref.update({'upvotedNotes': new_array})
@@ -668,7 +666,6 @@ def upvote_note(note_type, user_type, note_name, upvote_count_frame):
                         new_upvotes = doc_data.get('upvotes') + 1
                     user_doc_ref.update({'upvotedNotes': array_field})
                     db.collection('pdfData').document(doc.id).update({'upvotes': new_upvotes})
-                    upvote_count_frame.configure(text=str(new_upvotes))
                 else:
                     new_array = [str(doc.id)]
                     user_doc_ref.update({'upvotedNotes': new_array})
@@ -721,7 +718,7 @@ def display_note_menu():
         display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14),
                                         text_color='#1f61a5')
         display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                          command=lambda n=display_name: upvote_note('Notes', 'Teacher', n, display_upvote_count))
+                                          command=lambda n=display_name: upvote_note('Notes', 'Teacher', n))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in notes_file_names_student:
@@ -757,8 +754,7 @@ def display_note_menu():
         display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14),
                                         text_color='#1f61a5')
         display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                          command=lambda n=display_name: upvote_note('Notes', 'Student', n,
-                                                                                     display_upvote_count))
+                                          command=lambda n=display_name: upvote_note('Notes', 'Student', n))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_teacher:
