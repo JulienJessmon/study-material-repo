@@ -284,6 +284,7 @@ def upload_pdf_using_dialog():
         db.collection("pdfData").add({
             "filename": file_name,
             "upvotes": 0,
+            "downvotes": 0,
             "uploadedBy": loggedInUser,
             "downloads": 0,
             "link": f"/Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
@@ -317,6 +318,7 @@ def upload_pdf_using_dialog():
         db.collection("qbData").add({
             "filename": file_name,
             "upvotes": 0,
+            "downvotes": 0,
             "uploadedBy": loggedInUser,
             "downloads": 0,
             "link": f"/Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
@@ -341,6 +343,7 @@ def upload_pdf_using_dialog():
                     db.collection("videoData").add({
                         "filename": file_name,
                         "upvotes": 0,
+                        "downvotes": 0,
                         "uploadedBy": loggedInUser,  # remove the "" after testing
                         "downloads": 0,
                         "link": f"/Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
@@ -366,9 +369,16 @@ def select_destination_folder():
     return folder_path
 
 
-def download_pdf(filename):
+def download_pdf(filename, note_type, id, count_frame):
     pdf_ref = storage.child(f"{filename}")
-
+    if note_type == 'Notes':
+        doc_ref = db.collection('pdfData').document(id)
+    elif note_type == 'Question Banks':
+        doc_ref = db.collection('qbData').document(id)
+    elif note_type == 'Videos':
+        doc_ref = db.collection('videoData').document(id)
+    doc = doc_ref.get()
+    downloads = doc.get('downloads')
     try:
         url = pdf_ref.get_url(None)
         response = requests.get(url)
@@ -379,7 +389,9 @@ def download_pdf(filename):
 
         with open(file_path, "wb") as f:
             f.write(response.content)
-
+        downloads = downloads+1
+        doc_ref.update({'downloads': downloads})
+        count_frame.configure(text=str(downloads))
         # print("PDF downloaded successfully to:", file_path)
     except requests.exceptions.RequestException:
         # print("Error downloading PDF:", e)
@@ -429,7 +441,8 @@ def login():
                 main_menu.pack(expand=True, fill='both')
                 current_user_title.configure(text=loggedInUser)
                 create_user_tab_check()
-                # exit(0)   exit the function if login is successful
+                break
+                #exit(0)   #exit the function if login is successful
 
         if flag == 0:
             # print("Wrong username or password, try again")
@@ -503,7 +516,8 @@ def user_details_add(signup_id_entry, signup_password_entry, signup_user_type_bo
                 'Username': username,
                 'Password': password,
                 'UserType': user_type,
-                'upvotedNotes': []
+                'upvotedNotes': [],
+                'downvotedNotes': []
             }
 
             doc_ref = db.collection('userCollection').document()
@@ -574,101 +588,225 @@ def check_and_add_field(collection_name, document_id, field_name):
         doc_ref.set({field_name: []})
 
 
-def get_note_value(value_type, note_type, user_type, note_name):
-    if value_type == 'upvotes':
-        check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
-        docs = db.collection('pdfData').stream()
-        document_list = [doc for doc in docs]
-        for doc in document_list:
-            doc_data = doc.to_dict()
-            doc_link = doc_data.get('link')
-            doc_name = doc_data.get('filename')
-            if doc_link == check_link and doc_name == note_name:
-                doc_votes = doc_data.get('upvotes')
-                return doc_votes
-    elif value_type == 'downvotes':
-        print('hi')
-    elif value_type == 'downloads':
-        print('hi')
-
-
-def upvote_note(note_type, user_type, note_name):
+def get_note_value(note_type, user_type, note_name):
+    check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
     if note_type == 'Notes':
-        check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
         docs = db.collection('pdfData').stream()
-        document_list = [doc for doc in docs]
-        for doc in document_list:
-            doc_data = doc.to_dict()
-            doc_link = doc_data.get('link')
-            doc_name = doc_data.get('filename')
-            if doc_link == check_link and doc_name == note_name:
-                user_doc_ref = db.collection('userCollection').document(loggedInUserID)
-                user_doc = user_doc_ref.get()
-                if 'upvotedNotes' in user_doc.to_dict():
-                    new_value = str(doc.id)
-                    array_field = user_doc.to_dict()['upvotedNotes']
-                    if new_value in array_field:
-                        array_field.remove(new_value)
-                        new_upvotes = doc_data.get('upvotes') - 1
-                    else:
-                        array_field.append(new_value)
-                        new_upvotes = doc_data.get('upvotes') + 1
-                    user_doc_ref.update({'upvotedNotes': array_field})
-                    db.collection('pdfData').document(doc.id).update({'upvotes': new_upvotes})
-                    break
-                else:
-                    new_array = [str(doc.id)]
-                    user_doc_ref.update({'upvotedNotes': new_array})
     elif note_type == 'Question Banks':
-        check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
         docs = db.collection('qbData').stream()
-        document_list = [doc for doc in docs]
-        for doc in document_list:
-            doc_data = doc.to_dict()
-            doc_link = doc_data.get('link')
-            doc_name = doc_data.get('filename')
-            if doc_link == check_link and doc_name == note_name:
-                user_doc_ref = db.collection('userCollection').document(loggedInUserID)
-                user_doc = user_doc_ref.get()
-                if 'upvotedNotes' in user_doc.to_dict():
-                    new_value = str(doc.id)
-                    array_field = user_doc.to_dict()['upvotedNotes']
-                    if new_value in array_field:
-                        array_field.remove(new_value)
-                        new_upvotes = doc_data.get('upvotes') - 1
-                    else:
-                        array_field.append(new_value)
-                        new_upvotes = doc_data.get('upvotes') + 1
-                    user_doc_ref.update({'upvotedNotes': array_field})
-                    db.collection('pdfData').document(doc.id).update({'upvotes': new_upvotes})
-                else:
-                    new_array = [str(doc.id)]
-                    user_doc_ref.update({'upvotedNotes': new_array})
     elif note_type == 'Videos':
-        check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
         docs = db.collection('videoData').stream()
-        document_list = [doc for doc in docs]
-        for doc in document_list:
-            doc_data = doc.to_dict()
-            doc_link = doc_data.get('link')
-            doc_name = doc_data.get('filename')
-            if doc_link == check_link and doc_name == note_name:
-                user_doc_ref = db.collection('userCollection').document(loggedInUserID)
-                user_doc = user_doc_ref.get()
-                if 'upvotedNotes' in user_doc.to_dict():
-                    new_value = str(doc.id)
-                    array_field = user_doc.to_dict()['upvotedNotes']
-                    if new_value in array_field:
-                        array_field.remove(new_value)
-                        new_upvotes = doc_data.get('upvotes') - 1
-                    else:
-                        array_field.append(new_value)
-                        new_upvotes = doc_data.get('upvotes') + 1
-                    user_doc_ref.update({'upvotedNotes': array_field})
-                    db.collection('pdfData').document(doc.id).update({'upvotes': new_upvotes})
+    document_list = [doc for doc in docs]
+    for doc in document_list:
+        doc_data = doc.to_dict()
+        doc_link = doc_data.get('link')
+        doc_name = doc_data.get('filename')
+        if doc_link == check_link and doc_name == note_name:
+            doc_upvotes = doc_data.get('upvotes')
+            doc_downvotes = doc_data.get('downvotes')
+            doc_downloads = doc_data.get('downloads')
+            doc_uploader = doc_data.get('uploadedBy')
+            doc_id = doc.id
+            return doc_upvotes,doc_downvotes,doc_downloads,doc_uploader,doc_id
+            break
+
+def downvote_note(note_type, up_count_display, down_count_display, id):
+    if note_type == 'Notes':
+        doc_ref = db.collection('pdfData').document(id)
+        user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+        user_doc = user_doc_ref.get()
+        if 'downvotedNotes' in user_doc.to_dict():
+            new_value = str(id)
+            upvoted_array_field = user_doc.to_dict()['upvotedNotes']
+            downvoted_array_field = user_doc.to_dict()['downvotedNotes']
+            if new_value in downvoted_array_field:
+                downvoted_array_field.remove(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            else:
+                if new_value in upvoted_array_field:
+                    upvoted_array_field.remove(new_value)
+                    new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
                 else:
-                    new_array = [str(doc.id)]
-                    user_doc_ref.update({'upvotedNotes': new_array})
+                    new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+                downvoted_array_field.append(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+            user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
+            doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
+            down_count_display.configure(text=str(new_downvotes))
+            up_count_display.configure(text=str(new_upvotes))
+        else:
+            new_array = [str(id)]
+            user_doc_ref.update({'downvotedNotes': new_array})
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            doc_ref.update({'upvotes': new_downvotes})
+            down_count_display.configure(text=str(new_downvotes))
+            up_count_display.configure(text=str(new_upvotes))
+    elif note_type == 'Question Banks':
+        doc_ref = db.collection('qbData').document(id)
+        user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+        user_doc = user_doc_ref.get()
+        if 'downvotedNotes' in user_doc.to_dict():
+            new_value = str(id)
+            upvoted_array_field = user_doc.to_dict()['upvotedNotes']
+            downvoted_array_field = user_doc.to_dict()['downvotedNotes']
+            if new_value in downvoted_array_field:
+                downvoted_array_field.remove(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            else:
+                if new_value in upvoted_array_field:
+                    upvoted_array_field.remove(new_value)
+                    new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+                else:
+                    new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+                downvoted_array_field.append(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+            user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
+            doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
+            down_count_display.configure(text=str(new_downvotes))
+            up_count_display.configure(text=str(new_upvotes))
+        else:
+            new_array = [str(id)]
+            user_doc_ref.update({'downvotedNotes': new_array})
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            doc_ref.update({'upvotes': new_downvotes})
+            down_count_display.configure(text=str(new_downvotes))
+            up_count_display.configure(text=str(new_upvotes))
+    elif note_type == 'Videos':
+        doc_ref = db.collection('videoData').document(id)
+        user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+        user_doc = user_doc_ref.get()
+        if 'downvotedNotes' in user_doc.to_dict():
+            new_value = str(id)
+            upvoted_array_field = user_doc.to_dict()['upvotedNotes']
+            downvoted_array_field = user_doc.to_dict()['downvotedNotes']
+            if new_value in downvoted_array_field:
+                downvoted_array_field.remove(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            else:
+                if new_value in upvoted_array_field:
+                    upvoted_array_field.remove(new_value)
+                    new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+                else:
+                    new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+                downvoted_array_field.append(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+            user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
+            doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
+            down_count_display.configure(text=str(new_downvotes))
+            up_count_display.configure(text=str(new_upvotes))
+        else:
+            new_array = [str(id)]
+            user_doc_ref.update({'downvotedNotes': new_array})
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            doc_ref.update({'upvotes': new_downvotes})
+            down_count_display.configure(text=str(new_downvotes))
+            up_count_display.configure(text=str(new_upvotes))
+
+def upvote_note(note_type, up_count_display, down_count_display, id):
+    if note_type == 'Notes':
+        doc_ref = db.collection('pdfData').document(id)
+        user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+        user_doc = user_doc_ref.get()
+        if 'upvotedNotes' in user_doc.to_dict():
+            new_value = str(id)
+            upvoted_array_field = user_doc.to_dict()['upvotedNotes']
+            downvoted_array_field = user_doc.to_dict()['downvotedNotes']
+            if new_value in upvoted_array_field:
+                upvoted_array_field.remove(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            else:
+                if new_value in downvoted_array_field:
+                    downvoted_array_field.remove(new_value)
+                    new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+                else:
+                    new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+                upvoted_array_field.append(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+            user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
+            doc_ref.update({'upvotes': new_upvotes,'downvotes': new_downvotes})
+            up_count_display.configure(text=str(new_upvotes))
+            down_count_display.configure(text=str(new_downvotes))
+        else:
+            new_array = [str(id)]
+            user_doc_ref.update({'upvotedNotes': new_array})
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            doc_ref.update({'upvotes': new_upvotes})
+            up_count_display.configure(text=str(new_upvotes))
+            down_count_display.configure(text=str(new_downvotes))
+    elif note_type == 'Question Banks':
+        doc_ref = db.collection('qbData').document(id)
+        user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+        user_doc = user_doc_ref.get()
+        if 'upvotedNotes' in user_doc.to_dict():
+            new_value = str(id)
+            upvoted_array_field = user_doc.to_dict()['upvotedNotes']
+            downvoted_array_field = user_doc.to_dict()['downvotedNotes']
+            if new_value in upvoted_array_field:
+                upvoted_array_field.remove(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            else:
+                if new_value in downvoted_array_field:
+                    downvoted_array_field.remove(new_value)
+                    new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+                else:
+                    new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+                upvoted_array_field.append(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+            user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
+            doc_ref.update({'upvotes': new_upvotes,'downvotes': new_downvotes})
+            up_count_display.configure(text=str(new_upvotes))
+            down_count_display.configure(text=str(new_downvotes))
+        else:
+            new_array = [str(id)]
+            user_doc_ref.update({'upvotedNotes': new_array})
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            doc_ref.update({'upvotes': new_upvotes})
+            up_count_display.configure(text=str(new_upvotes))
+            down_count_display.configure(text=str(new_downvotes))
+    elif note_type == 'Videos':
+        doc_ref = db.collection('videoData').document(id)
+        user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+        user_doc = user_doc_ref.get()
+        if 'upvotedNotes' in user_doc.to_dict():
+            new_value = str(id)
+            upvoted_array_field = user_doc.to_dict()['upvotedNotes']
+            downvoted_array_field = user_doc.to_dict()['downvotedNotes']
+            if new_value in upvoted_array_field:
+                upvoted_array_field.remove(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            else:
+                if new_value in downvoted_array_field:
+                    downvoted_array_field.remove(new_value)
+                    new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+                else:
+                    new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+                upvoted_array_field.append(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+            user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
+            doc_ref.update({'upvotes': new_upvotes,'downvotes': new_downvotes})
+            up_count_display.configure(text=str(new_upvotes))
+            down_count_display.configure(text=str(new_downvotes))
+        else:
+            new_array = [str(id)]
+            user_doc_ref.update({'upvotedNotes': new_array})
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            doc_ref.update({'upvotes': new_upvotes})
+            up_count_display.configure(text=str(new_upvotes))
+            down_count_display.configure(text=str(new_downvotes))
+
+
 
 
 # Display Frame content
@@ -688,47 +826,68 @@ def display_note_menu():
     for name in notes_file_names_teacher:
         display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_pdf_display
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
+                                                                                    display_name)
+        except:
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+            frame.pack(fill='x', pady=5)
+            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
+                                           text_color='#1f61a5')
+            uploader_name_title.pack(side=TOP, padx=5)
+            break
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
-                                       text_color='#1f61a5')
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
+                                               text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
-                                 text_color='#1f61a5')
+                                         text_color='#1f61a5')
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_pdf(n))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                                    command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Notes',id, count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_downvote_count.pack(side=BOTTOM)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14),
-                                        text_color='#1f61a5')
+        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                                text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img, command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count, id=note_id:downvote_note('Notes', up_count_display, down_count_display, id))
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count.pack(side=BOTTOM)
+
         display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                          command=lambda n=display_name: upvote_note('Notes', 'Teacher', n))
+                                                  command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count,id=note_id: upvote_note('Notes', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in notes_file_names_student:
         display_name = name.replace("Notes/" + current_search_dir + "Student/", "")
         parent_frame = student_pdf_display
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Student',
+                                                                                                  display_name)
+        except:
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+            frame.pack(fill='x', pady=5)
+            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
+                                           text_color='#1f61a5')
+            uploader_name_title.pack(side=TOP, padx=5)
+            break
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
                                        text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
@@ -736,35 +895,52 @@ def display_note_menu():
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_pdf(n))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Notes',id, count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_downvote_count.pack(side=BOTTOM)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14),
+        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
                                         text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                            command=lambda down_count_display=display_downvote_count,
+                                                           up_count_display=display_upvote_count,
+                                                           id=note_id: downvote_note('Notes', up_count_display,
+                                                                                     down_count_display, id))
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count.pack(side=BOTTOM)
+
         display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                          command=lambda n=display_name: upvote_note('Notes', 'Student', n))
+                                          command=lambda down_count_display=display_downvote_count,
+                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
+                                              'Notes', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_teacher:
         display_name = name.replace("Question Banks/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_qb_display
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Teacher',
+                                                                                                  display_name)
+        except:
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+            frame.pack(fill='x', pady=5)
+            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
+                                           text_color='#1f61a5')
+            uploader_name_title.pack(side=TOP, padx=5)
+            break
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
                                        text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
@@ -772,33 +948,54 @@ def display_note_menu():
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_pdf(n))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Question Banks',id, count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_downvote_count.pack(side=BOTTOM)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                        text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                            command=lambda down_count_display=display_downvote_count,
+                                                           up_count_display=display_upvote_count,
+                                                           id=note_id: downvote_note('Question Banks', up_count_display,
+                                                                                     down_count_display, id))
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count.pack(side=BOTTOM)
+
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                          command=lambda down_count_display=display_downvote_count,
+                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
+                                              'Question Banks', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
         display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_student:
         display_name = name.replace("Question Banks/" + current_search_dir + "Student/", "")
         parent_frame = student_qb_display
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks',
+                                                                                                  'Student',
+                                                                                                  display_name)
+        except:
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+            frame.pack(fill='x', pady=5)
+            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
+                                           text_color='#1f61a5')
+            uploader_name_title.pack(side=TOP, padx=5)
+            print(display_name)
+            break
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
                                        text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
@@ -806,33 +1003,53 @@ def display_note_menu():
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_pdf(n))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Question Banks',id, count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_downvote_count.pack(side=BOTTOM)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                        text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                            command=lambda down_count_display=display_downvote_count,
+                                                           up_count_display=display_upvote_count,
+                                                           id=note_id: downvote_note('Question Banks', up_count_display,
+                                                                                     down_count_display, id))
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count.pack(side=BOTTOM)
+
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                          command=lambda down_count_display=display_downvote_count,
+                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
+                                              'Question Banks', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
         display_upvote_count.pack(side=BOTTOM)
     for name in videos_file_names_teacher:
         display_name = name.replace("Videos/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_video_display
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Videos',
+                                                                                                  'Teacher',
+                                                                                                  display_name)
+        except:
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+            frame.pack(fill='x', pady=5)
+            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
+                                           text_color='#1f61a5')
+            uploader_name_title.pack(side=TOP, padx=5)
+            break
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
                                        text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
@@ -840,33 +1057,53 @@ def display_note_menu():
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_pdf(n))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Videos',id, count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_downvote_count.pack(side=BOTTOM)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                        text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                            command=lambda down_count_display=display_downvote_count,
+                                                           up_count_display=display_upvote_count,
+                                                           id=note_id: downvote_note('Videos', up_count_display,
+                                                                                     down_count_display, id))
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count.pack(side=BOTTOM)
+
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                          command=lambda down_count_display=display_downvote_count,
+                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
+                                              'Videos', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
         display_upvote_count.pack(side=BOTTOM)
     for name in videos_file_names_student:
         display_name = name.replace("Videos/" + current_search_dir + "Student/", "")
         parent_frame = student_video_display
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#ffffff')
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Videos',
+                                                                                                  'Student',
+                                                                                                  display_name)
+        except:
+            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+            frame.pack(fill='x', pady=5)
+            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
+                                           text_color='#1f61a5')
+            uploader_name_title.pack(side=TOP, padx=5)
+            break
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text="Username", font=("Arial Bold", 10),
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
                                        text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
@@ -874,24 +1111,33 @@ def display_note_menu():
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_pdf(n))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count = CTkLabel(master=download_frame, text="0", font=("Arial Bold", 14),
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Videos',id, count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img)
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text="0", font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_downvote_count.pack(side=BOTTOM)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img)
+        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                        text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                            command=lambda down_count_display=display_downvote_count,
+                                                           up_count_display=display_upvote_count,
+                                                           id=note_id: downvote_note('Videos', up_count_display,
+                                                                                     down_count_display, id))
+        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+        display_downvote_count.pack(side=BOTTOM)
+
+        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                          command=lambda down_count_display=display_downvote_count,
+                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
+                                              'Videos', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count = CTkLabel(master=upvote_frame, text="0", font=("Arial Bold", 14), text_color='#1f61a5')
         display_upvote_count.pack(side=BOTTOM)
 
 
