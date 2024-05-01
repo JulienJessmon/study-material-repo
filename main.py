@@ -1263,8 +1263,8 @@ login_button = CTkButton(master=login_frame, text="Login", fg_color="#1f61a5", h
 login_button.pack(anchor="w", expand=True)
 
 # Main Menu
-logged_in_menu_container = CTkFrame(master=window, fg_color='#e7e7f4')
-main_menu = CTkFrame(master=logged_in_menu_container)
+logged_in_menu_container = CTkFrame(master=window, fg_color='#ffffff')
+main_menu = CTkFrame(master=logged_in_menu_container, fg_color='#e7e7f4')
 top_menu = CTkFrame(master=logged_in_menu_container, fg_color='#3b8ed0', height=30)
 top_menu.pack(fill='x')
 logout_button = CTkButton(master=top_menu, fg_color='#ffffff', text_color='#3b8ed0', text='Logout',
@@ -1275,11 +1275,11 @@ current_user_title = CTkLabel(master=top_menu, font=("Arial Bold", 14), text_col
 current_user_title.pack(side='left', padx=20)
 
 # Buttons menu
-main_menu_title = CTkLabel(master=main_menu, text="Choose Tab")
+main_menu_title = CTkLabel(master=main_menu, text="Choose Tab",font=("Arial Bold", 16),text_color='#1f61a5')
 main_menu_title.pack()
 
-buttons_menu = CTkFrame(master=main_menu)
-buttons_menu.pack(pady=20)
+buttons_menu = CTkFrame(master=main_menu,fg_color='#ffffff')
+buttons_menu.pack(pady=(0,20))
 
 notes_button = CTkButton(master=buttons_menu, corner_radius=25, text='Notes', font=("Arial Bold", 12),
                          command=lambda: show_tabs('Notes'))
@@ -1346,7 +1346,7 @@ student_video_display = CTkScrollableFrame(master=student_video_tab, fg_color='#
 student_video_display.pack(expand=True, fill='both')
 
 filter_course_table = ['B.Tech']
-filter_branch_table = ['CSE', 'Other']
+filter_branch_table = ['CSE']
 filter_year_table = ['1st year', '2nd year', '3rd year', '4th year']
 filter_subject_table = ['']
 filter_module_table = ['1', '2', '3', '4', '5']
