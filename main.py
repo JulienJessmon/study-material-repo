@@ -126,6 +126,58 @@ r = 0
 current_q = ""
 
 
+def upvote_ans(id,up_count_display,down_count_display):
+    doc_ref = db.collection('answerData').document(id)
+    user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+    user_doc = user_doc_ref.get()
+    if 'upvotedAns' in user_doc.to_dict():
+        new_value = str(id)
+        upvoted_array_field = user_doc.to_dict()['upvotedAns']
+        downvoted_array_field = user_doc.to_dict()['downvotedAns']
+        if new_value in upvoted_array_field:
+            upvoted_array_field.remove(new_value)
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+        else:
+            if new_value in downvoted_array_field:
+                downvoted_array_field.remove(new_value)
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+            else:
+                new_downvotes = doc_ref.get().to_dict().get('downvotes', 0)
+            upvoted_array_field.append(new_value)
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
+        user_doc_ref.update({'upvotedAns': upvoted_array_field, 'downvotedAns': downvoted_array_field})
+        doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
+        up_count_display.configure(text=str(new_upvotes))
+        down_count_display.configure(text=str(new_downvotes))
+
+
+def downvote_ans(id,up_count_display,down_count_display):
+    doc_ref = db.collection('answerData').document(id)
+    user_doc_ref = db.collection('userCollection').document(loggedInUserID)
+    user_doc = user_doc_ref.get()
+    if 'downvotedAns' in user_doc.to_dict():
+        new_value = str(id)
+        downvoted_array_field = user_doc.to_dict()['downvotedAns']
+        upvoted_array_field = user_doc.to_dict()['upvotedAns']
+        if new_value in downvoted_array_field:
+            downvoted_array_field.remove(new_value)
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) - 1
+            new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+        else:
+            if new_value in upvoted_array_field:
+                upvoted_array_field.remove(new_value)
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) - 1
+            else:
+                new_upvotes = doc_ref.get().to_dict().get('upvotes', 0)
+            downvoted_array_field.append(new_value)
+            new_downvotes = doc_ref.get().to_dict().get('downvotes', 0) + 1
+        user_doc_ref.update({'upvotedAns': upvoted_array_field, 'downvotedAns': downvoted_array_field})
+        doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
+        up_count_display.configure(text=str(new_upvotes))
+        down_count_display.configure(text=str(new_downvotes))
+
+
 def empty_frame(frame):  # Empties a frame
     for widget in frame.winfo_children():
         widget.destroy()
@@ -188,26 +240,58 @@ def answer_qn():  # Answer a qn
     answer = ranstextbox.get()
     ranstextbox.delete(0, END)
     empty_frame(raframe)
+    ans_doc_ref = db.collection('answerData').document()
+    ans_doc_ref.set(
+        {
+            'uploadedBy': loggedInUser,
+            'ans': answer,
+            'upvotes': 0,
+            'downvotes': 0
+        }
+    )
     if a == None:
-        a = [answer]
+        a = [ans_doc_ref.id]
     else:
-        a.append(answer)
+        a.append(ans_doc_ref.id)
+    q_doc_ref = db.collection('qna').document(ID)
+    q_doc_ref.update({'ans': a})
     for i in a:
+        doc_ref = db.collection('answerData').document(i)
+        doc = doc_ref.get()
+        ans = doc.to_dict()['ans']
+        name = doc.to_dict()['uploadedBy']
+        upvotes = doc.to_dict()['upvotes']
+        downvotes = doc.to_dict()['downvotes']
         message_frame = CTkFrame(master=raframe, fg_color='#e4e5f1')
         message_frame.pack(padx=5, pady=5, side=TOP, anchor=NW)
         message_text_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
         message_text_frame.pack(padx=5, pady=5, side='left')
-        CTkLabel(master=message_text_frame, text="Username", font=('Arial Bold', 12), text_color='#1f61a5').pack(
+        CTkLabel(master=message_text_frame, text=name, font=('Arial Bold', 12), text_color='#1f61a5').pack(
             side=TOP, anchor=NW)
-        CTkLabel(master=message_text_frame, font=('Arial Bold', 10), text=i).pack(side=TOP, anchor=NW)
+        CTkLabel(master=message_text_frame, font=('Arial Bold', 10), text=ans).pack(side='left', anchor=NW)
+        message_downvote_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
         message_upvote_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
+        message_downvote_frame.pack(side='right', padx=10, pady=5)
+        upvote_count_display = CTkLabel(master=message_upvote_frame, text=upvotes, font=('Arial Bold', 10),
+                                        text_color='#1f61a5')
+        downvote_count_display = CTkLabel(master=message_downvote_frame, text=downvotes, font=('Arial Bold', 10),
+                                          text_color='#1f61a5')
+        CTkButton(master=message_downvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
+                  image=downvote_img, command=lambda id=i, upcount_display=upvote_count_display,
+                                                     downcount_display=downvote_count_display: downvote_ans(i,
+                                                                                                            upcount_display,
+                                                                                                            downcount_display)).pack(
+            side=TOP)
+
+        downvote_count_display.pack(side=BOTTOM)
         message_upvote_frame.pack(side='right', padx=10, pady=5)
         CTkButton(master=message_upvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
-                  image=upvote_img).pack(
+                  image=upvote_img, command=lambda id=i, upcount_display=upvote_count_display,
+                                                   downcount_display=downvote_count_display: upvote_ans(id,
+                                                                                                        upcount_display,
+                                                                                                        downcount_display)).pack(
             side=TOP)
-        CTkLabel(master=message_upvote_frame, text='0', font=('Arial Bold', 10), text_color='#1f61a5').pack(side=BOTTOM)
-    doc_ref = db.collection('qna').document(ID)
-    doc_ref.update({'ans': a})
+        upvote_count_display.pack(side=BOTTOM)
 
     # print(ans)'''
 
@@ -232,20 +316,42 @@ def fetch_data(qn, i):  # fetches data to put in rframe..qns and answers
         CTkLabel(master=raframe, text='No Answer Yet', text_color='#ff0000', anchor='e').pack(padx=10, pady=10)
     else:
         for i in ans:
+            doc_ref = db.collection('answerData').document(i)
+            doc = doc_ref.get()
+            ans = doc.to_dict()['ans']
+            name = doc.to_dict()['uploadedBy']
+            upvotes = doc.to_dict()['upvotes']
+            downvotes = doc.to_dict()['downvotes']
             message_frame = CTkFrame(master=raframe, fg_color='#e4e5f1')
             message_frame.pack(padx=5, pady=5, side=TOP, anchor=NW)
             message_text_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
             message_text_frame.pack(padx=5, pady=5, side='left')
-            CTkLabel(master=message_text_frame, text="Username", font=('Arial Bold', 12), text_color='#1f61a5').pack(
+            CTkLabel(master=message_text_frame, text=name, font=('Arial Bold', 12), text_color='#1f61a5').pack(
                 side=TOP, anchor=NW)
-            CTkLabel(master=message_text_frame, font=('Arial Bold', 10), text=i).pack(side=TOP, anchor=NW)
+            CTkLabel(master=message_text_frame, font=('Arial Bold', 10), text=ans).pack(side='left', anchor=NW)
+            message_downvote_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
             message_upvote_frame = CTkFrame(master=message_frame, fg_color='#e4e5f1')
+            message_downvote_frame.pack(side='right', padx=10, pady=5)
+            upvote_count_display = CTkLabel(master=message_upvote_frame, text=upvotes, font=('Arial Bold', 10),
+                                            text_color='#1f61a5')
+            downvote_count_display = CTkLabel(master=message_downvote_frame, text=downvotes, font=('Arial Bold', 10),
+                                              text_color='#1f61a5')
+            CTkButton(master=message_downvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
+                      image=downvote_img, command=lambda id=i, upcount_display=upvote_count_display,
+                                                         downcount_display=downvote_count_display: downvote_ans(i,
+                                                                                                                upcount_display,
+                                                                                                                downcount_display)).pack(
+                side=TOP)
+
+            downvote_count_display.pack(side=BOTTOM)
             message_upvote_frame.pack(side='right', padx=10, pady=5)
             CTkButton(master=message_upvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
-                      image=upvote_img).pack(
+                      image=upvote_img, command=lambda id=i, upcount_display=upvote_count_display,
+                                                       downcount_display=downvote_count_display: upvote_ans(id,
+                                                                                                            upcount_display,
+                                                                                                            downcount_display)).pack(
                 side=TOP)
-            CTkLabel(master=message_upvote_frame, text='0', font=('Arial Bold', 10), text_color='#1f61a5').pack(
-                side=BOTTOM)
+            upvote_count_display.pack(side=BOTTOM)
 
 
 def select_pdf_file():
@@ -517,7 +623,9 @@ def user_details_add(signup_id_entry, signup_password_entry, signup_user_type_bo
                 'Password': password,
                 'UserType': user_type,
                 'upvotedNotes': [],
-                'downvotedNotes': []
+                'downvotedNotes': [],
+                'upvotedAns': [],
+                'downvotedAns': []
             }
 
             doc_ref = db.collection('userCollection').document()
