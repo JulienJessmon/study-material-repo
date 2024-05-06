@@ -126,6 +126,102 @@ r = 0
 current_q = ""
 
 
+def sort_notes_and_priority(students, marks):
+    assert len(students) == len(marks), "Both arrays should have the same length"
+    zipped = sorted(zip(students, marks), key=lambda x: x[1], reverse=True)
+    sorted_students = [student for student, _ in zipped]
+    sorted_marks = [mark for _, mark in zipped]
+    return sorted_students, sorted_marks
+
+def priority_sort():
+    new_array = []
+    array_priority = []
+    global notes_file_names_teacher
+    for name in notes_file_names_teacher:
+        display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
+                                                                                                  display_name)
+        except:
+            print('Exception')
+        priority_value = int(note_upvotes) - int(note_downvotes)
+        new_array.append(name)
+        array_priority.append(priority_value)
+    notes_file_names_teacher,array_priority = sort_notes_and_priority(new_array, array_priority)
+    new_array = []
+    array_priority = []
+    global notes_file_names_student
+    for name in notes_file_names_student:
+        display_name = name.replace("Notes/" + current_search_dir + "Student/", "")
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Student',
+                                                                                                  display_name)
+        except:
+            print('Exception')
+        priority_value = int(note_upvotes) - int(note_downvotes)
+        new_array.append(name)
+        array_priority.append(priority_value)
+    notes_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+    new_array = []
+    array_priority = []
+    global qb_file_names_teacher
+    for name in qb_file_names_teacher:
+        display_name = name.replace("Question Banks/" + current_search_dir + "Teacher/", "")
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Teacher',
+                                                                                                  display_name)
+        except:
+            print('Exception')
+        priority_value = int(note_upvotes) - int(note_downvotes)
+        new_array.append(name)
+        array_priority.append(priority_value)
+    qb_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
+    new_array = []
+    array_priority = []
+    global qb_file_names_student
+    for name in qb_file_names_student:
+        display_name = name.replace("Question Banks/" + current_search_dir + "Student/", "")
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Student',
+                                                                                                  display_name)
+        except:
+            print('Exception')
+        priority_value = int(note_upvotes) - int(note_downvotes)
+        new_array.append(name)
+        array_priority.append(priority_value)
+    notes_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+    new_array = []
+    array_priority = []
+    global videos_file_names_teacher
+    for name in videos_file_names_teacher:
+        display_name = name.replace("Videos/" + current_search_dir + "Teacher/", "")
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Videos',
+                                                                                                  'Teacher',
+                                                                                                  display_name)
+        except:
+            print('Exception')
+        priority_value = int(note_upvotes) - int(note_downvotes)
+        new_array.append(name)
+        array_priority.append(priority_value)
+    videos_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
+    new_array = []
+    array_priority = []
+    global videos_file_names_student
+    for name in videos_file_names_student:
+        display_name = name.replace("Videos/" + current_search_dir + "Student/", "")
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Videos',
+                                                                                                  'Student',
+                                                                                                  display_name)
+        except:
+            print('Exception')
+        priority_value = int(note_upvotes) - int(note_downvotes)
+        new_array.append(name)
+        array_priority.append(priority_value)
+    videos_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
+
 def upvote_ans(id,up_count_display,down_count_display):
     doc_ref = db.collection('answerData').document(id)
     user_doc_ref = db.collection('userCollection').document(loggedInUserID)
@@ -815,6 +911,7 @@ def downvote_note(note_type, up_count_display, down_count_display, id):
             doc_ref.update({'upvotes': new_downvotes})
             down_count_display.configure(text=str(new_downvotes))
             up_count_display.configure(text=str(new_upvotes))
+    display_note_menu()
 
 def upvote_note(note_type, up_count_display, down_count_display, id):
     if note_type == 'Notes':
@@ -913,6 +1010,7 @@ def upvote_note(note_type, up_count_display, down_count_display, id):
             doc_ref.update({'upvotes': new_upvotes})
             up_count_display.configure(text=str(new_upvotes))
             down_count_display.configure(text=str(new_downvotes))
+    display_note_menu()
 
 
 
@@ -931,6 +1029,7 @@ def display_note_menu():
         frame.destroy()
     for frame in student_video_display.winfo_children():
         frame.destroy()
+    priority_sort()
     for name in notes_file_names_teacher:
         display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
         parent_frame = teacher_pdf_display
