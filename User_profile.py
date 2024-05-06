@@ -32,7 +32,7 @@ class UserProfile():#ctk.Ctk):
     videodata=[]
     notedata=[]
     def setData(self):
-        field_filter=FieldFilter('Username','==','j1')  #Filter to user j1
+        field_filter=FieldFilter('Username','==',self.name)  #Filter to user j1
         query1=db.collection('userCollection').where(filter=field_filter)
         doc=query1.get()
         data=doc[0].to_dict()
@@ -41,7 +41,7 @@ class UserProfile():#ctk.Ctk):
         self.type=data['UserType']      #Set user type
 
     def video(self):
-        field_filter = FieldFilter('uploadedBy', '==', 'j1')    #Filter
+        field_filter = FieldFilter('uploadedBy', '==', self.name)    #Filter
         query1 = db.collection('videoData').where(filter=field_filter)  #Video data
         doc=query1.get()
         for i in doc:
@@ -50,16 +50,19 @@ class UserProfile():#ctk.Ctk):
         print(self.videodata)
 
     def PDFs(self):
-        field_filter = FieldFilter('uploadedBy', '==', 'j1')  # Filter
+        path = []
+        field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
         query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
         doc = query1.get()
         for i in doc:
             i = i.to_dict()
             self.notedata.append(i['filename'])
-        print(self.notedata)
+            path.append(i['link'])
+        # print(self.notedata)
+        print(path)  # Directories in path
 
     def setProfileImage(self):
-            field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
+            field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
             query1 = db.collection('userCollection').where(filter=field_filter)
             doc=query1.get()
             document_ids = [i.id for i in doc]
@@ -85,9 +88,10 @@ class UserProfile():#ctk.Ctk):
             self.img_url=storage.child(f'Profile_Pics/'+self.id).get_url(None)    #DO CHANGE THE NAME TO THE ONE CHOSEN
             query1 = db.collection('userCollection').document(id)
             query1.update({"image_url":self.img_url})
+        
     def getImage(self):
 
-        field_filter = FieldFilter('Username', '==', 'j1')  # Filter to user j1
+        field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
         query1 = db.collection('userCollection').document(self.id)
         doc=query1.get()
         self.img_url=doc.to_dict()['image_url']
@@ -105,7 +109,8 @@ class UserProfile():#ctk.Ctk):
         print(self.name,self.password)
         self.setData()
         print(self.type)
-        #self.video()
+        self.video()
+        self.PDFs()
         self.setProfileImage()
         self.getImage()
-UserProfile('j1','Password@234')        
+UserProfile('cse19','Password@234')
