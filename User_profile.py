@@ -39,7 +39,21 @@ class UserProfile():#ctk.Ctk):
         document_ids = [i.id for i in doc]
         self.id = document_ids[0]
         self.type=data['UserType']      #Set user type
-
+        
+    def changePassword(self):
+        field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
+        query1 = db.collection('userCollection').where(filter=field_filter)
+        doc = query1.get()
+        data = doc[0].to_dict()
+        document_ids = [i.id for i in doc]
+        query1 = db.collection('userCollection').document(document_ids[0])
+        doc=query1.get()
+        data=doc.to_dict()
+        print(data)
+        newPassword=input("\nEnter new password:")
+        query1.update({'Password':newPassword})
+        print("Password Updated")
+        
     def video(self):
         field_filter = FieldFilter('uploadedBy', '==', self.name)    #Filter
         query1 = db.collection('videoData').where(filter=field_filter)  #Video data
