@@ -278,7 +278,7 @@ def answer_qn():  # Answer a qn
                                           text_color='#1f61a5')
         CTkButton(master=message_downvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
                   image=downvote_img, command=lambda id=i, upcount_display=upvote_count_display,
-                                                     downcount_display=downvote_count_display: downvote_ans(i,
+                                                     downcount_display=downvote_count_display: downvote_ans(id,
                                                                                                             upcount_display,
                                                                                                             downcount_display)).pack(
             side=TOP)
@@ -338,7 +338,7 @@ def fetch_data(qn, i):  # fetches data to put in rframe..qns and answers
                                               text_color='#1f61a5')
             CTkButton(master=message_downvote_frame, width=20, height=20, text='', hover_color='#7C0A02',
                       image=downvote_img, command=lambda id=i, upcount_display=upvote_count_display,
-                                                         downcount_display=downvote_count_display: downvote_ans(i,
+                                                         downcount_display=downvote_count_display: downvote_ans(id,
                                                                                                                 upcount_display,
                                                                                                                 downcount_display)).pack(
                 side=TOP)
