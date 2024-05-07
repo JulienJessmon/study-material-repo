@@ -1,10 +1,16 @@
+import os
+import requests
+from io import BytesIO
+from google.cloud.firestore_v1.base_query import FieldFilter
 import tkinter as tk
 import firebase_admin
 import pyrebase
 import requests
-from PIL import Image
+from PIL import Image, ImageTk
 from customtkinter import *
+from customtkinter import filedialog
 from firebase_admin import credentials, firestore, storage
+
 
 cred = credentials.Certificate({
     "type": "service_account",
@@ -89,6 +95,8 @@ upload_img_data = Image.open(os.path.join(img_dir, 'upload.png'))
 upvote_img_data = Image.open(os.path.join(img_dir, 'upvote.png'))
 downvote_img_data = Image.open(os.path.join(img_dir, 'downvote.png'))
 download_img_data = Image.open(os.path.join(img_dir, 'download.png'))
+default_user_img_data = Image.open(os.path.join(img_dir, 'Default_user_img.png'))
+delete_img_data = Image.open(os.path.join(img_dir, 'delete.png'))
 
 user_img = CTkImage(dark_image=user_img_data, light_image=user_img_data, size=(17, 17))
 password_img = CTkImage(dark_image=password_img_data, light_image=password_img_data, size=(17, 17))
@@ -99,6 +107,9 @@ upload_img = CTkImage(dark_image=upload_img_data, light_image=upload_img_data, s
 upvote_img = CTkImage(dark_image=upvote_img_data, light_image=upvote_img_data, size=(17, 17))
 downvote_img = CTkImage(dark_image=downvote_img_data, light_image=downvote_img_data, size=(17, 17))
 download_img = CTkImage(dark_image=download_img_data, light_image=download_img_data, size=(17, 17))
+delete_img = CTkImage(dark_image=delete_img_data, light_image=delete_img_data, size=(17, 17))
+default_user_img = CTkImage(dark_image=default_user_img_data, light_image=default_user_img_data, size=(200,200))
+
 
 current_search_dir = ''
 current_notes_search_dir = ''
@@ -114,7 +125,9 @@ file_names = []
 admin_logged = False
 
 loggedInUser = ''
+password = ''
 loggedInUserID = ''
+loggedin_profile = None
 current_user_type = ''
 
 collection_ref = db.collection('qna')
@@ -124,6 +137,162 @@ list_qns = []
 a = {}
 r = 0
 current_q = ""
+
+
+class UserProfile():  # ctk.Ctk):
+    username = []  # Name
+    user_type = {}  # Name and Type
+    data = []
+    videodata = []
+    notedata = []
+
+    def setData(self):
+        field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
+        query1 = db.collection('userCollection').where(filter=field_filter)
+        doc = query1.get()
+        data = doc[0].to_dict()
+        document_ids = [i.id for i in doc]
+        self.id = document_ids[0]
+        self.type = data['UserType']  # Set user type
+
+    def changePassword(self,change_password_entry,change_password_menu_error_label):
+        field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
+        query1 = db.collection('userCollection').where(filter=field_filter)
+        doc = query1.get()
+        data = doc[0].to_dict()
+        document_ids = [i.id for i in doc]
+        query1 = db.collection('userCollection').document(document_ids[0])
+        doc = query1.get()
+        data = doc.to_dict()
+        #print(data)
+        newPassword = change_password_entry.get()
+        flag=0
+        if all({newPassword}):
+            if (newPassword.islower() is False) and (newPassword.isalnum() is False) and (newPassword.isspace() is False) and (
+                    len(newPassword) >= 8):
+                has_number = False
+                for char in newPassword:
+                    if not char.isnumeric():
+                        has_number = True
+                        break
+                if has_number is True:
+                    flag = 1
+                elif has_number is False:
+                    change_password_menu_error_label.configure(
+                        text="A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
+                             "number are required")
+                    change_password_entry.delete(0, END)
+            if flag == 1:
+                query1.update({'Password': newPassword})
+                change_password_menu_error_label.configure(
+                    text="Password updated")
+                change_password_entry.delete(0, END)
+
+                # print('DocumentID: ', doc_ref.id)  # purely for knowing it works, don't need it in the code
+            if flag == 0:
+                change_password_menu_error_label.configure(
+                    text="A minimum 8 characters password contains a \ncombination of uppercase and lowercase letter \nand "
+                         "number are required")
+                change_password_entry.delete(0, END)
+        else:
+            change_password_menu_error_label.configure(
+                text="Set all required fields")
+        change_password_entry.delete(0, END)
+
+
+    def video(self):
+        field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
+        query1 = db.collection('videoData').where(filter=field_filter)  # Video data
+        doc = query1.get()
+        for i in doc:
+            i = i.to_dict()
+            self.videodata.append(i['filename'])
+        #print(self.videodata)
+
+    def PDFs(self,profile_uploaded_menu_frame):
+        path = []
+        field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
+        query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
+        doc = query1.get()
+        path = {}
+        for i in doc:
+            document_id = i.id
+            i = i.to_dict()
+            value = i['link'] + '/' + i['filename']
+            self.notedata.append(i['filename'])
+            path[document_id] = value
+        # print(self.notedata)
+        # print(path)   Directories in path
+        for frame in profile_uploaded_menu_frame.winfo_children():
+            frame.destroy()
+        for id, note in path.items():
+            frame = CTkFrame(master=profile_uploaded_menu_frame, fg_color='#ffffff')
+            frame.pack(fill='x',pady=5,padx=5)
+            text_frame = CTkFrame(master=frame,fg_color='#ffffff')
+            text_frame.pack(side=LEFT)
+            link_list = note.split('/')
+            title_text = link_list[-1]
+            title = CTkLabel(master=text_frame, text=title_text,font = ("Arial Bold", 18),text_color = '#1f61a5')
+            title.pack(side=TOP, padx=10, anchor=NW)
+            link = CTkLabel(master=text_frame,text=note,font = ("Arial Bold", 12))
+            link.pack(side=BOTTOM,padx=10,anchor=NW)
+            delete_button = CTkButton(master=frame,text='',width=40,height=40,image=delete_img,fg_color='#de1313',hover_color='#bd0a0a', command=lambda link=note, nid=id: delete_note('Notes',link,nid,current_user_type))
+            delete_button.pack(side=RIGHT,padx=10)
+
+
+
+    def setProfileImage(self,profile_image_label):
+        field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
+        query1 = db.collection('userCollection').where(filter=field_filter)
+        doc = query1.get()
+        document_ids = [i.id for i in doc]
+        id = document_ids[0]
+        # print('Document IDs:', document_ids)
+        doc = query1.get()
+        # data = doc[0].to_dict()
+        # print(doc)
+        path = filedialog.askopenfilename(filetypes=[(".PNG Files", "*.png")])
+        if path:
+            self.file_name = os.path.basename(path)
+            self.img = Image.open(path)
+            # Now, img is your uploaded image
+            # You can perform operations on the image here
+        imgbytes = BytesIO()
+        self.img.save(imgbytes, format='PNG')
+        imgbytes.seek(0)
+        storage.child(f'Profile_Pics/' + self.id).put(imgbytes, content_type='image/png')
+        self.img_url = storage.child(f'Profile_Pics/' + self.id).get_url(None)  # DO CHANGE THE NAME TO THE ONE CHOSEN
+        query1 = db.collection('userCollection').document(id)
+        query1.update({"image_url": self.img_url})
+        self.getImage(profile_image_label)
+
+    def getImage(self,profile_image_label):
+
+        field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
+        query1 = db.collection('userCollection').document(self.id)
+        doc = query1.get()
+        self.img_url = doc.to_dict()['image_url']
+        if self.img_url == '':
+            profile_image_label.configure(image=default_user_img)
+        else:
+            response = requests.get(self.img_url, stream=True)
+
+            if response.status_code == 200:
+                image_data = response.content
+                image = Image.open(BytesIO(image_data))
+                image = image.resize((200, 200))
+                photo_img = ImageTk.PhotoImage(image)
+                profile_image_label.configure(image=photo_img)
+        # image to be used is in image
+
+    def __init__(self, name, password):
+        self.name = name
+        self.password = password
+        self.setData()
+        self.video()
+        #self.PDFs(profile_uploaded_menu_frame)
+        #self.setProfileImage()
+        #self.getImage()
 
 
 def sort_notes_and_priority(students, marks):
@@ -450,6 +619,44 @@ def fetch_data(qn, i):  # fetches data to put in rframe..qns and answers
             upvote_count_display.pack(side=BOTTOM)
 
 
+def back_to_qframe():
+    rframe.pack_forget()
+    back_button_frame.pack_forget()
+    ranstextbox.delete(0, END)
+    scrolling_frame_1.pack(side='bottom', fill='both', expand=True)
+    post_button.pack(pady=10)
+
+
+def refresh_questions():
+    for frame in scrolling_frame_1.winfo_children():
+        frame.destroy()
+    for i in dict_ids:
+        q = dict_qns[dict_ids[i]]
+        frame = CTkFrame(master=scrolling_frame_1, fg_color='#e4e5f1')
+        frame.pack(fill='x', pady=5, padx=5)
+        CTkLabel(master=frame, text=q, anchor='w', text_color="#1f61a5", justify="left",
+                 font=("Arial Bold", 14)).pack(side='left', padx=10, pady=10)
+
+        b = CTkButton(master=frame, text='View', hover=True, corner_radius=25,
+                      command=lambda text=q, id=i: fetch_data(text, id))
+        ##b.bind("<Button-1>", lambda event, text=q: fetch_data(text))
+        b.pack(side=RIGHT, padx=20, pady=5)
+        b = CTkButton(master=scrolling_frame_1)
+
+
+def button_click_event():
+    # buttons in scrolling frame and their event handling
+    global r
+    dialog = CTkInputDialog(text="Enter Question:", title="Test")
+    data = dialog.get_input()
+    if data:
+        doc_ref = db.collection('qna').document()
+        doc_ref.set({'qn': data, 'ans': ''})
+        getqns()
+        refresh_questions()
+        r += 1
+
+
 def select_pdf_file():
     file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     return file_path
@@ -601,9 +808,39 @@ def download_pdf(filename, note_type, id, count_frame):
 
 
 def show_tabs(tab_name):
-    menu_tabs.pack(expand=True, fill='both')
     main_menu.pack_forget()
-    menu_tabs.set(tab_name)
+    menu_tab_button_frame.pack(fill='x')
+    menu_tabs.pack(expand=True, fill='both')
+    if tab_name == 'Notes':
+        notes_tab_frame.pack(expand=True,fill='both')
+        qna_display_frame.pack_forget()
+        user_profile_frame.pack_forget()
+        approval_tab_frame.pack_forget()
+        signup_tab_frame.pack_forget()
+    elif tab_name == 'Q & A':
+        notes_tab_frame.pack_forget()
+        qna_display_frame.pack(expand=True, fill='both')
+        user_profile_frame.pack_forget()
+        approval_tab_frame.pack_forget()
+        signup_tab_frame.pack_forget()
+    elif tab_name == 'Profile':
+        notes_tab_frame.pack_forget()
+        qna_display_frame.pack_forget()
+        user_profile_frame.pack(expand=True, fill='both')
+        approval_tab_frame.pack_forget()
+        signup_tab_frame.pack_forget()
+    elif tab_name == 'Approve':
+        notes_tab_frame.pack_forget()
+        qna_display_frame.pack_forget()
+        user_profile_frame.pack_forget()
+        approval_tab_frame.pack(expand=True, fill='both')
+        signup_tab_frame.pack_forget()
+    elif tab_name == 'Create User':
+        notes_tab_frame.pack_forget()
+        qna_display_frame.pack_forget()
+        user_profile_frame.pack_forget()
+        approval_tab_frame.pack_forget()
+        signup_tab_frame.pack(expand=True, fill='both')
 
 
 def next_page(current_page, next_page_frame):
@@ -614,7 +851,8 @@ def next_page(current_page, next_page_frame):
 def set_text(text):  # function to set error text
     error_label.configure(text=text)
 
-
+def display_profile_notes():
+    loggedin_profile.PDFs(profile_uploaded_notes_display_frame)
 def login():
     username = id_entry.get()
     password = password_entry.get()
@@ -633,11 +871,16 @@ def login():
                 global loggedInUser
                 global loggedInUserID
                 global current_user_type
+                global loggedin_profile
                 loggedInUser = username
                 loggedInUserID = doc.id
+                loggedin_profile = UserProfile(loggedInUser,password)
+                loggedin_profile.getImage(profile_image_label)
+                display_profile_notes()
                 current_user_type = ut1
                 flag = 1
                 set_text("")
+                username_label.configure(text=f'Username : {username}')
                 next_page(login_page, main_menu)
                 logged_in_menu_container.pack(expand=True, fill='both')
                 main_menu.pack(expand=True, fill='both')
@@ -653,6 +896,12 @@ def login():
             set_text("Wrong username or password, try again")
             login()
 
+
+def change_password_menu_toggle():
+    if change_password_menu_frame.winfo_ismapped():
+        change_password_menu_frame.pack_forget()
+    else:
+        change_password_menu_frame.pack(expand=True, fill='x', pady=10, padx=10)
 
 def logout():
     for frame in teacher_pdf_display.winfo_children():
@@ -684,6 +933,7 @@ def logout():
     logged_in_menu_container.pack_forget()
     main_menu.pack_forget()
     menu_tabs.pack_forget()
+    menu_tab_button_frame.pack_forget()
     id_entry.delete(0, END)
     password_entry.delete(0, END)
     back_to_qframe()
@@ -911,7 +1161,6 @@ def downvote_note(note_type, up_count_display, down_count_display, id):
             doc_ref.update({'upvotes': new_downvotes})
             down_count_display.configure(text=str(new_downvotes))
             up_count_display.configure(text=str(new_upvotes))
-    display_note_menu()
 
 def upvote_note(note_type, up_count_display, down_count_display, id):
     if note_type == 'Notes':
@@ -1010,9 +1259,21 @@ def upvote_note(note_type, up_count_display, down_count_display, id):
             doc_ref.update({'upvotes': new_upvotes})
             up_count_display.configure(text=str(new_upvotes))
             down_count_display.configure(text=str(new_downvotes))
-    display_note_menu()
 
 
+def delete_note(note_type, link, note_id, user_type):
+    file_ref = bucket.blob(link[1:])
+    file_ref.delete()
+    if note_type == 'Notes':
+        doc_ref = db.collection('pdfData').document(note_id)
+        doc_ref.delete()
+    elif note_type == 'Question Banks':
+        doc_ref = db.collection('qbData').document(note_id)
+        doc_ref.delete()
+    elif note_type == 'Videos':
+        doc_ref = db.collection('videoData').document(note_id)
+        doc_ref.delete()
+    display_profile_notes()
 
 
 # Display Frame content
@@ -1025,7 +1286,7 @@ def display_note_menu():
         frame.destroy()
     for frame in student_qb_display.winfo_children():
         frame.destroy()
-    for frame in student_video_display.winfo_children():
+    for frame in teacher_video_display.winfo_children():
         frame.destroy()
     for frame in student_video_display.winfo_children():
         frame.destroy()
@@ -1497,24 +1758,35 @@ qna_button.pack(pady=20, padx=15)
 profile_button = CTkButton(master=buttons_menu, corner_radius=25, text='Profile', font=("Arial Bold", 12),
                            command=lambda: show_tabs('Profile'))
 profile_button.pack(pady=20, padx=15)
+approve_button = CTkButton(master=buttons_menu, corner_radius=25, text='Approve', font=("Arial Bold", 12),
+                           command=lambda: show_tabs('Approve'))
+create_user_button = CTkButton(master=buttons_menu, corner_radius=25, text='Create User', font=("Arial Bold", 12),
+                           command=lambda: show_tabs('Create User'))
 
+#Tabs Buttons
+menu_tab_button_frame = CTkFrame(master=logged_in_menu_container,fg_color='#e7e7f4')
+notes_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Notes',font=("Arial Bold", 12), command=lambda: show_tabs('Notes'))
+notes_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+qna_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Q & A',font=("Arial Bold", 12), command=lambda: show_tabs('Q & A'))
+qna_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+profile_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Profile',font=("Arial Bold", 12), command=lambda: show_tabs('Profile'))
+profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+create_user_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Create User',font=("Arial Bold", 12), command=lambda: show_tabs('Create User'))
+approve_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Approve',font=("Arial Bold", 12), command=lambda: show_tabs('Approve'))
 # Tabs
-menu_tabs = CTkTabview(master=logged_in_menu_container, fg_color='#e7e7f4', segmented_button_fg_color='#e7e7f4',
-                       corner_radius=12)
+menu_tabs = CTkFrame(master=logged_in_menu_container, fg_color='#e7e7f4')
 
-notes_tab = menu_tabs.add('Notes')
-qna_tab = menu_tabs.add('Q & A')
-profile_tab = menu_tabs.add('Profile')
 
 # Notes tab
+notes_tab_frame = CTkFrame(master=menu_tabs,fg_color='#e7e7f4')
 
-notes_filter_menu_frame = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#ffffff')
+notes_filter_menu_frame = CTkFrame(master=notes_tab_frame, width=200, border_color='#484b6a', fg_color='#ffffff')
 notes_filter_menu_frame.pack(side='left', fill='y', padx=10)
-notes_upload_menu_frame_container = CTkFrame(master=notes_tab, width=200, border_color='#484b6a', fg_color='#ffffff')
+notes_upload_menu_frame_container = CTkFrame(master=notes_tab_frame, width=200, border_color='#484b6a', fg_color='#ffffff')
 notes_upload_menu_frame = CTkScrollableFrame(master=notes_upload_menu_frame_container, fg_color='#ffffff')
 notes_upload_menu_frame.pack(expand=True, fill='both')
 
-notes_display_frame = CTkFrame(master=notes_tab, fg_color='#fafafa')
+notes_display_frame = CTkFrame(master=notes_tab_frame, fg_color='#fafafa')
 notes_display_frame.pack(side='left', expand=True, fill='both', padx=10)
 
 notes_display_tabs = CTkTabview(master=notes_display_frame, fg_color='#f1f1f9', corner_radius=12, height=10,
@@ -1676,46 +1948,10 @@ notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', tex
 notes_upload_error_label.pack()
 
 
-# qna
+# qna_tab
 
-def back_to_qframe():
-    rframe.pack_forget()
-    back_button_frame.pack_forget()
-    ranstextbox.delete(0, END)
-    scrolling_frame_1.pack(side='bottom', fill='both', expand=True)
-    post_button.pack(pady=10)
+qna_display_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
 
-
-def refresh_questions():
-    for i in dict_ids:
-        q = dict_qns[dict_ids[i]]
-        frame = CTkFrame(master=scrolling_frame_1, fg_color='#e4e5f1')
-        frame.pack(fill='x', pady=5, padx=5)
-        CTkLabel(master=frame, text=q, anchor='w', text_color="#1f61a5", justify="left",
-                 font=("Arial Bold", 14)).pack(side='left', padx=10, pady=10)
-
-        b = CTkButton(master=frame, text='View', hover=True, corner_radius=25,
-                      command=lambda text=q, id=i: fetch_data(text, id))
-        ##b.bind("<Button-1>", lambda event, text=q: fetch_data(text))
-        b.pack(side=RIGHT, padx=20, pady=5)
-        b = CTkButton(master=scrolling_frame_1)
-
-
-def button_click_event():
-    # buttons in scrolling frame and their event handling
-    global r
-    dialog = CTkInputDialog(text="Enter Question:", title="Test")
-    data = dialog.get_input()
-    if data:
-        doc_ref = db.collection('qna').document()
-        doc_ref.set({'qn': data, 'ans': ''})
-        getqns()
-        refresh_questions()
-        r += 1
-
-
-qna_display_frame = CTkFrame(master=qna_tab, fg_color='#e7e7f4')
-qna_display_frame.pack(expand=True, fill='both')
 post_button = CTkButton(master=qna_display_frame, text='Post Question', corner_radius=50, hover=True,
                         command=button_click_event)
 post_button.pack(pady=10)
@@ -1757,75 +1993,152 @@ for i in dict_ids:
     r = r + 1
 
 
+# user profile
+
+user_profile_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
+user_profile_title = CTkLabel(master=user_profile_frame,font=("Arial Bold", 20),text_color='#1f61a5',text='User Profile')
+user_profile_title.pack()
+profile_top_frame = CTkFrame(master=user_profile_frame, fg_color='#ffffff')
+profile_top_frame.pack(fill='x',padx=10,pady=10)
+profile_top_left_frame = CTkFrame(master=profile_top_frame,fg_color='#ffffff')
+profile_top_left_frame.pack(side=LEFT,expand=True,fill='both',padx=10,pady=10)
+profile_top_right_frame = CTkFrame(master=profile_top_frame,fg_color='#ffffff')
+profile_top_right_frame.pack(side=RIGHT,expand=True,fill='both',padx=10,pady=10)
+username_label = CTkLabel(master=profile_top_left_frame,text=f"Username : ",font=("Arial Bold", 16),text_color='#1f61a5')
+username_label.pack(anchor=NW)
+change_password_button = CTkButton(master=profile_top_left_frame, text="change password", font=("Arial Bold", 14),command=lambda:change_password_menu_toggle())
+change_password_button.pack(anchor=NW,pady=(0,5))
+change_profile_pic_button = CTkButton(master=profile_top_left_frame, text="change profile picture", font=("Arial Bold", 14),command=lambda:loggedin_profile.setProfileImage(profile_image_label))
+change_profile_pic_button.pack(anchor=NW,pady=(0,5))
+profile_image_label = CTkLabel(master=profile_top_right_frame,text="")
+profile_image_label.pack()
+change_password_menu_frame = CTkFrame(master=profile_top_left_frame,fg_color='#e7e7f4')
+change_password_title = CTkLabel(master=change_password_menu_frame,text='Change Password',font=("Arial Bold", 16),text_color='#1f61a5')
+change_password_title.pack(pady=10,padx=10)
+change_password_entry = CTkEntry(master=change_password_menu_frame,corner_radius=25, width=225, fg_color="#EEEEEE", border_color="#1f61a5",
+                    border_width=1,
+                    text_color="#000000")
+change_password_entry.pack(pady=(0,10),padx=10)
+change_password_menu_button = CTkButton(master=change_password_menu_frame,text='Confirm',font=("Arial Bold", 14),command=lambda:loggedin_profile.changePassword(change_password_entry,change_password_menu_error_label))
+change_password_menu_button.pack(pady=(0,10),padx=10)
+change_password_menu_error_label = CTkLabel(master=change_password_menu_frame,text='',font=("Arial Bold", 10),text_color="#FF0000")
+change_password_menu_error_label.pack()
+
+profile_bottom_frame = CTkFrame(master=user_profile_frame, fg_color='#ffffff')
+profile_bottom_frame.pack(padx=10,pady=10,fill='both',expand=True)
+profile_uploaded_menu_frame = CTkScrollableFrame(master=profile_bottom_frame, fg_color='#ffffff')
+profile_uploaded_menu_frame.pack(padx=10,pady=10,fill='both',expand=True)
+profile_uploaded_notes_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Notes', font=("Arial Bold", 16),text_color='#1f61a5')
+profile_uploaded_notes_title.pack()
+profile_uploaded_notes_display_frame = CTkScrollableFrame(master=profile_uploaded_menu_frame)
+profile_uploaded_notes_display_frame.pack(fill='x')
+profile_uploaded_qb_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Question Banks', font=("Arial Bold", 16),text_color='#1f61a5')
+profile_uploaded_qb_title.pack()
+profile_uploaded_qb_display_frame = CTkScrollableFrame(master=profile_uploaded_menu_frame)
+profile_uploaded_qb_display_frame.pack(fill='x')
+profile_uploaded_videos_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Videos', font=("Arial Bold", 16),text_color='#1f61a5')
+profile_uploaded_videos_title.pack()
+profile_uploaded_videos_display_frame = CTkScrollableFrame(master=profile_uploaded_menu_frame)
+profile_uploaded_videos_display_frame.pack(fill='x')
+
+#Create User Tab
+signup_tab_frame = CTkFrame(master=menu_tabs)
+signup_page = CTkFrame(master=signup_tab_frame, fg_color='#e7e7f4')
+signup_page.pack(expand=True, fill='both')
+
+signup_right_frame = CTkFrame(master=signup_page, height=500, width=300, fg_color="#ffffff")
+signup_right_frame.pack(expand=True, side='right', fill='y', pady=10, padx=10)
+
+signup_login_frame = CTkFrame(master=signup_right_frame, height=500, width=300, fg_color="#ffffff")
+signup_login_frame.propagate(False)
+signup_login_frame.pack(expand=True)
+
+signup_title_label = CTkLabel(master=signup_login_frame, text='Create User', text_color='#1f61a5', anchor='w',
+                              justify='left',
+                              font=("Arial Bold", 24))
+signup_title_label.pack(anchor="w", pady=(20, 5), padx=(25, 0))
+
+signup_id_label = CTkLabel(master=signup_login_frame, text='  User ID', text_color="#1f61a5", anchor="w",
+                           justify="left",
+                           font=("Arial Bold", 14), image=user_img, compound="left")
+signup_id_label.pack(anchor="w", pady=(15, 0), padx=(25, 0))
+signup_id_entry = CTkEntry(master=signup_login_frame, width=225, fg_color="#EEEEEE", border_color="#1f61a5",
+                           border_width=1, corner_radius=20,
+                           text_color="#000000")
+signup_id_entry.pack(anchor="w", padx=(25, 0))
+
+signup_password_label = CTkLabel(master=signup_login_frame, text='  Password', text_color="#1f61a5", anchor="w",
+                                 justify="left",
+                                 font=("Arial Bold", 14), image=password_img, compound="left")
+signup_password_label.pack(anchor="w", pady=(15, 0), padx=(25, 0))
+signup_password_entry = CTkEntry(master=signup_login_frame, show='*', width=225, fg_color="#EEEEEE",
+                                 border_color="#1f61a5", corner_radius=20,
+                                 border_width=1, text_color="#000000")
+signup_password_entry.pack(anchor="w", padx=(25, 0))
+signup_show_password_box = CTkCheckBox(master=signup_login_frame, text="Show Password", border_width=1,
+                                       checkbox_width=20,
+                                       checkbox_height=20,
+                                       command=lambda: signup_toggle_password(signup_password_entry,
+                                                                              signup_show_password_box))
+signup_show_password_box.pack(anchor="w", padx=(25, 0), pady=10)
+
+signup_user_type_label = CTkLabel(master=signup_login_frame, text='  User Type', text_color="#1f61a5",
+                                  anchor="w", justify="left",
+                                  font=("Arial Bold", 14), image=user_img, compound="left")
+signup_user_type_label.pack(anchor="w", padx=(25, 0))
+
+user_types = ['Student', 'Teacher', 'Admin']
+
+signup_user_type_box = CTkComboBox(master=signup_login_frame, width=225, fg_color="#EEEEEE",
+                                   border_color="#1f61a5", corner_radius=20,
+                                   border_width=1, text_color="#000000", values=user_types, state='readonly')
+signup_user_type_box.pack(anchor="w", padx=(25, 0))
+
+signup_error_label = CTkLabel(master=signup_login_frame, text="", text_color="#FF0000")
+signup_error_label.pack(anchor="w", padx=(25, 0))
+
+signup_button = CTkButton(master=signup_login_frame, text="Create User", fg_color="#1f61a5",
+                          hover_color="#19429d",
+                          font=("Arial Bold", 12), text_color="#ffffff", width=225, corner_radius=20,
+                          command=lambda: user_details_add(signup_id_entry, signup_password_entry,
+                                                           signup_user_type_box, signup_error_label))
+signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
+
+# approval tab
+
+approval_tab_frame = CTkFrame(master=menu_tabs)
+approval_tab_frame = CTkFrame(master=approval_tab_frame)
+approval_tab_frame.pack(fill='both')
+
+
 # user signup
 def create_user_tab_check():
     global admin_logged
     if current_user_type == 'Admin' and not admin_logged:
         admin_logged = True
-        signup_tab = menu_tabs.add('Create User')
-        signup_page = CTkFrame(master=signup_tab, fg_color='#e7e7f4')
-        signup_page.pack(expand=True, fill='both')
+        for frame in menu_tab_button_frame.winfo_children():
+            frame.pack_forget()
+        profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        approve_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        create_user_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        for frame in buttons_menu.winfo_children():
+            frame.pack_forget()
+        profile_button.pack(pady=20, padx=15)
+        approve_button.pack(pady=20, padx=15)
+        create_user_button.pack(pady=20, padx=15)
 
-        signup_right_frame = CTkFrame(master=signup_page, height=500, width=300, fg_color="#ffffff")
-        signup_right_frame.pack(expand=True, side='right', fill='y', pady=10, padx=10)
-
-        signup_login_frame = CTkFrame(master=signup_right_frame, height=500, width=300, fg_color="#ffffff")
-        signup_login_frame.propagate(False)
-        signup_login_frame.pack(expand=True)
-
-        signup_title_label = CTkLabel(master=signup_login_frame, text='Create User', text_color='#1f61a5', anchor='w',
-                                      justify='left',
-                                      font=("Arial Bold", 24))
-        signup_title_label.pack(anchor="w", pady=(20, 5), padx=(25, 0))
-
-        signup_id_label = CTkLabel(master=signup_login_frame, text='  User ID', text_color="#1f61a5", anchor="w",
-                                   justify="left",
-                                   font=("Arial Bold", 14), image=user_img, compound="left")
-        signup_id_label.pack(anchor="w", pady=(15, 0), padx=(25, 0))
-        signup_id_entry = CTkEntry(master=signup_login_frame, width=225, fg_color="#EEEEEE", border_color="#1f61a5",
-                                   border_width=1, corner_radius=20,
-                                   text_color="#000000")
-        signup_id_entry.pack(anchor="w", padx=(25, 0))
-
-        signup_password_label = CTkLabel(master=signup_login_frame, text='  Password', text_color="#1f61a5", anchor="w",
-                                         justify="left",
-                                         font=("Arial Bold", 14), image=password_img, compound="left")
-        signup_password_label.pack(anchor="w", pady=(15, 0), padx=(25, 0))
-        signup_password_entry = CTkEntry(master=signup_login_frame, show='*', width=225, fg_color="#EEEEEE",
-                                         border_color="#1f61a5", corner_radius=20,
-                                         border_width=1, text_color="#000000")
-        signup_password_entry.pack(anchor="w", padx=(25, 0))
-        signup_show_password_box = CTkCheckBox(master=signup_login_frame, text="Show Password", border_width=1,
-                                               checkbox_width=20,
-                                               checkbox_height=20,
-                                               command=lambda: signup_toggle_password(signup_password_entry,
-                                                                                      signup_show_password_box))
-        signup_show_password_box.pack(anchor="w", padx=(25, 0), pady=10)
-
-        signup_user_type_label = CTkLabel(master=signup_login_frame, text='  User Type', text_color="#1f61a5",
-                                          anchor="w", justify="left",
-                                          font=("Arial Bold", 14), image=user_img, compound="left")
-        signup_user_type_label.pack(anchor="w", padx=(25, 0))
-
-        user_types = ['Student', 'Teacher', 'Admin']
-
-        signup_user_type_box = CTkComboBox(master=signup_login_frame, width=225, fg_color="#EEEEEE",
-                                           border_color="#1f61a5", corner_radius=20,
-                                           border_width=1, text_color="#000000", values=user_types, state='readonly')
-        signup_user_type_box.pack(anchor="w", padx=(25, 0))
-
-        signup_error_label = CTkLabel(master=signup_login_frame, text="", text_color="#FF0000")
-        signup_error_label.pack(anchor="w", padx=(25, 0))
-
-        signup_button = CTkButton(master=signup_login_frame, text="Create User", fg_color="#1f61a5",
-                                  hover_color="#19429d",
-                                  font=("Arial Bold", 12), text_color="#ffffff", width=225, corner_radius=20,
-                                  command=lambda: user_details_add(signup_id_entry, signup_password_entry,
-                                                                   signup_user_type_box, signup_error_label))
-        signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
     else:
         if admin_logged:
-            menu_tabs.delete("Create User")
+            for frame in menu_tab_button_frame.winfo_children():
+                frame.pack_forget()
+            notes_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+            qna_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+            profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+            for frame in buttons_menu.winfo_children():
+                frame.pack_forget()
+            notes_button.pack(pady=20, padx=15)
+            qna_button.pack(pady=20, padx=15)
+            profile_button.pack(pady=20, padx=15)
             admin_logged = False
 
 
