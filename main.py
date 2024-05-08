@@ -676,28 +676,44 @@ def upload_pdf_using_dialog():
             if pdf_path:
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
-                    storage.child(
-                        f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                        pdf_data)
-                    # print("PDF uploaded successfully!")
-                    notes_upload_error_label.configure(text='PDF uploaded successfully!')
-                    notes_upload_filename_entry.delete(0, END)
-                    notes_upload_type_box.set("")
-                    notes_upload_course_box.set("")
-                    notes_upload_branch_box.set("")
-                    notes_upload_year_box.set("")
-                    notes_upload_subject_box.set("")
-                    notes_upload_module_box.set("")
+                    if current_user_type == "Teacher":
+                        storage.child(
+                            f"ForApproval/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
+                            pdf_data)
+                        # print("PDF uploaded successfully!")
+                        notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                        notes_upload_filename_entry.delete(0, END)
+                        notes_upload_type_box.set("")
+                        notes_upload_course_box.set("")
+                        notes_upload_branch_box.set("")
+                        notes_upload_year_box.set("")
+                        notes_upload_subject_box.set("")
+                        notes_upload_module_box.set("")
+                    elif current_user_type == "Student":
+                        storage.child(
+                            f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
+                            pdf_data)
+                        # print("PDF uploaded successfully!")
+                        notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                        notes_upload_filename_entry.delete(0, END)
+                        notes_upload_type_box.set("")
+                        notes_upload_course_box.set("")
+                        notes_upload_branch_box.set("")
+                        notes_upload_year_box.set("")
+                        notes_upload_subject_box.set("")
+                        notes_upload_module_box.set("")
         else:
             notes_upload_error_label.configure(text='Fill all fields!')
-        db.collection("pdfData").add({
-            "filename": file_name,
-            "upvotes": 0,
-            "downvotes": 0,
-            "uploadedBy": loggedInUser,
-            "downloads": 0,
-            "link": f"/Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
-        })
+
+            db.collection("pdfData").add({
+                "filename": file_name,
+                "upvotes": 0,
+                "downvotes": 0,
+                "uploadedBy": loggedInUser,
+                "downloads": 0,
+                "link": f"/Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
+            })
+
     elif material_type == 'Question Banks':
         file_name = notes_upload_filename_entry.get()
         course = notes_upload_course_box.get()
