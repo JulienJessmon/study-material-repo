@@ -1,6 +1,8 @@
 import os
 import requests
+import tempfile
 from io import BytesIO
+from google.cloud import storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 import tkinter as tk
 import firebase_admin
@@ -37,19 +39,6 @@ firebase_admin.initialize_app(cred, {
 })
 db = firestore.client()
 bucket = storage.bucket()
-config = {
-    "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
-    "authDomain": "study-material-repo.firebaseapp.com",
-    "projectId": "study-material-repo",
-    "storageBucket": "study-material-repo.appspot.com",
-    "messagingSenderId": "291006521607",
-    "appId": "1:291006521607:web:7196317a36dcf6f0e365a2",
-    "measurementId": "G-6EGQ548K06",
-    "databaseURL": ""
-}
-
-firebase = pyrebase.initialize_app(config)
-storage = firebase.storage()
 
 script_directory = os.path.dirname(os.path.realpath(__file__))
 images_directory = os.path.join(script_directory, 'Images')
@@ -312,14 +301,14 @@ def priority_sort():
     for name in notes_file_names_teacher:
         display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
         try:
-            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
-                                                                                                  display_name)
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',display_name)
         except:
             print('Exception')
         priority_value = int(note_upvotes) - int(note_downvotes)
         new_array.append(name)
         array_priority.append(priority_value)
     notes_file_names_teacher,array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global notes_file_names_student
@@ -334,6 +323,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     notes_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global qb_file_names_teacher
@@ -348,6 +338,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     qb_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global qb_file_names_student
@@ -361,7 +352,8 @@ def priority_sort():
         priority_value = int(note_upvotes) - int(note_downvotes)
         new_array.append(name)
         array_priority.append(priority_value)
-    notes_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+    qb_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global videos_file_names_teacher
@@ -377,6 +369,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     videos_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global videos_file_names_student
@@ -392,6 +385,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     videos_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
 
 
 def upvote_ans(id,up_count_display,down_count_display):
@@ -663,7 +657,6 @@ def button_click_event():
 def select_pdf_file():
     file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     return file_path
-
 
 def upload_pdf_using_dialog():
     material_type = notes_upload_type_box.get()
@@ -1067,6 +1060,10 @@ def check_and_add_field(collection_name, document_id, field_name):
 
 def get_note_value(note_type, user_type, note_name):
     check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
+    print(note_name)
+    if note_name.endswith('.pdf'):
+        notename = note_name.strip('.pdf')
+        print(notename)
     if note_type == 'Notes':
         docs = db.collection('pdfData').stream()
     elif note_type == 'Question Banks':
@@ -1364,7 +1361,6 @@ def display_note_menu():
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in notes_file_names_student:
-        print(name)
         display_name = name.replace("Notes/" + current_search_dir + "Student/", "")
         parent_frame = student_pdf_display
         try:
@@ -1477,7 +1473,6 @@ def display_note_menu():
             uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
                                            text_color='#1f61a5')
             uploader_name_title.pack(side=TOP, padx=5)
-            print(display_name)
             break
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
@@ -1644,6 +1639,7 @@ def search_subjects():
     global qb_file_names_student
     global videos_file_names_student
 
+
     course = notes_search_course_box.get()
     branch = notes_search_branch_box.get()
     year = notes_search_year_box.get()
@@ -1653,7 +1649,6 @@ def search_subjects():
         current_search_dir = f'{course}/{branch}/{year}/{subject}/{module}/'
         notes_file_names_teacher = list_files_in_folder('Notes/' + current_search_dir + "Teacher")
         notes_file_names_student = list_files_in_folder('Notes/' + current_search_dir + "Student")
-        print(notes_file_names_student)
         qb_file_names_teacher = list_files_in_folder('Question Banks/' + current_search_dir + "Teacher")
         qb_file_names_student = list_files_in_folder('Question Banks/' + current_search_dir + "Student")
         videos_file_names_teacher = list_files_in_folder('Videos/' + current_search_dir + "Teacher")
@@ -2129,11 +2124,19 @@ signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 def approval_notes(pdf_path,approved,course,branch,year,subject,module,file_name):
     # when making the gui make it a button click so if 1st button then we send that to normal notes path
     if approved == 1:  # when 1st button is clicked
-            if pdf_path:
-                with open(pdf_path, "rb") as f:
-                    print('approved')
-                    pdf_data = f.read()
-                    storage.child(f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(pdf_data)
+        try:
+            storage_client = storage.bucket()
+            source_blob = storage_client.blob(pdf_path)
+            local_path = tempfile.mktemp(suffix=".pdf")
+            source_blob.download_to_filename(local_path)
+            destination_blob = storage_client.blob(
+                f"Notes/{course}/{branch}/{year}/{subject}/{module}/Teacher/{file_name}")
+            destination_blob.upload_from_filename(local_path)
+            os.remove(local_path)
+            list_approval_notes()
+            source_blob.delete()
+        except Exception as e:
+            print("Error:", e)
     if approved == 2:  # when 2nd button is clicked
         #delete_note('Notes', pdf_path, note_id, 'Teacher')  # use that function
         print('deleted')
