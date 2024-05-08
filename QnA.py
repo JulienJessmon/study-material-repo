@@ -212,34 +212,35 @@ class UserProfile():  # ctk.Ctk):
         #print(self.videodata)
 
     def PDFs(self,profile_uploaded_menu_frame):
-        path = []
-        field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
-        query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
-        doc = query1.get()
-        path = {}
-        for i in doc:
-            document_id = i.id
-            i = i.to_dict()
-            value = i['link'] + '/' + i['filename']
-            self.notedata.append(i['filename'])
-            path[document_id] = value
-        # print(self.notedata)
-        # print(path)   Directories in path
-        for frame in profile_uploaded_menu_frame.winfo_children():
-            frame.destroy()
-        for id, note in path.items():
-            frame = CTkFrame(master=profile_uploaded_menu_frame, fg_color='#ffffff')
-            frame.pack(fill='x',pady=5,padx=5)
-            text_frame = CTkFrame(master=frame,fg_color='#ffffff')
-            text_frame.pack(side=LEFT)
-            link_list = note.split('/')
-            title_text = link_list[-1]
-            title = CTkLabel(master=text_frame, text=title_text,font = ("Arial Bold", 18),text_color = '#1f61a5')
-            title.pack(side=TOP, padx=10, anchor=NW)
-            link = CTkLabel(master=text_frame,text=note,font = ("Arial Bold", 12))
-            link.pack(side=BOTTOM,padx=10,anchor=NW)
-            delete_button = CTkButton(master=frame,text='',width=40,height=40,image=delete_img,fg_color='#de1313',hover_color='#bd0a0a', command=lambda link=note, nid=id: delete_note('Notes',link,nid,current_user_type))
-            delete_button.pack(side=RIGHT,padx=10)
+        if current_user_type == 'Teacher' or current_user_type == 'Student':
+            path = []
+            field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
+            query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
+            doc = query1.get()
+            path = {}
+            for i in doc:
+                document_id = i.id
+                i = i.to_dict()
+                value = i['link'] + '/' + i['filename']
+                self.notedata.append(i['filename'])
+                path[document_id] = value
+            # print(self.notedata)
+            # print(path)   Directories in path
+            for frame in profile_uploaded_menu_frame.winfo_children():
+                frame.destroy()
+            for id, note in path.items():
+                frame = CTkFrame(master=profile_uploaded_menu_frame, fg_color='#ffffff')
+                frame.pack(fill='x',pady=5,padx=5)
+                text_frame = CTkFrame(master=frame,fg_color='#ffffff')
+                text_frame.pack(side=LEFT)
+                link_list = note.split('/')
+                title_text = link_list[-1]
+                title = CTkLabel(master=text_frame, text=title_text,font = ("Arial Bold", 18),text_color = '#1f61a5')
+                title.pack(side=TOP, padx=10, anchor=NW)
+                link = CTkLabel(master=text_frame,text=note,font = ("Arial Bold", 12))
+                link.pack(side=BOTTOM,padx=10,anchor=NW)
+                delete_button = CTkButton(master=frame,text='',width=40,height=40,image=delete_img,fg_color='#de1313',hover_color='#bd0a0a', command=lambda link=note, nid=id: delete_note('Notes',link,nid,current_user_type))
+                delete_button.pack(side=RIGHT,padx=10)
 
 
 
@@ -1083,6 +1084,8 @@ def get_note_value(note_type, user_type, note_name):
             doc_downloads = doc_data.get('downloads')
             doc_uploader = doc_data.get('uploadedBy')
             doc_id = doc.id
+            if doc_link == '/Notes/B.Tech/CSE/1st year/Engineering Physics A - PHT 100/1/Student':
+                print(doc_upvotes,doc_downvotes,)
             return doc_upvotes,doc_downvotes,doc_downloads,doc_uploader,doc_id
             break
 
@@ -1361,6 +1364,7 @@ def display_note_menu():
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in notes_file_names_student:
+        print(name)
         display_name = name.replace("Notes/" + current_search_dir + "Student/", "")
         parent_frame = student_pdf_display
         try:
@@ -2149,7 +2153,6 @@ def display_approval_notes():
         year = note_list[3]
         subject= note_list[4]
         module= note_list[5]
-        doc_upvotes,doc_downvotes,doc_downloads,doc_uploader,doc_id =get_note_value('Notes', 'Teacher', display_name)
         file_details = f"{subject} : Module - {module}"
         frame = CTkFrame(master=approval_file_frame, fg_color='#ffffff')
         frame.pack(fill='x', padx=10, pady=10)
