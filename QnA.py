@@ -1,18 +1,14 @@
-import os
-import requests
 import tempfile
 from io import BytesIO
 from google.cloud import storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 import tkinter as tk
 import firebase_admin
-import pyrebase
 import requests
 from PIL import Image, ImageTk
 from customtkinter import *
 from customtkinter import filedialog
 from firebase_admin import credentials, firestore, storage
-
 
 cred = credentials.Certificate({
     "type": "service_account",
@@ -210,7 +206,7 @@ class UserProfile():  # ctk.Ctk):
             for i in doc:
                 document_id = i.id
                 i = i.to_dict()
-                value = i['link'] + '/' + i['filename']
+                value = i.get('link', '') + '/' + i.get('filename', '')
                 self.notedata.append(i['filename'])
                 path[document_id] = value
             # print(self.notedata)
@@ -673,31 +669,23 @@ def upload_pdf_using_dialog():
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
                     if current_user_type == "Teacher":
-                        storage.child(
-                            f"ForApproval/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                            pdf_data)
-                        # print("PDF uploaded successfully!")
-                        notes_upload_error_label.configure(text='PDF uploaded successfully!')
-                        notes_upload_filename_entry.delete(0, END)
-                        notes_upload_type_box.set("")
-                        notes_upload_course_box.set("")
-                        notes_upload_branch_box.set("")
-                        notes_upload_year_box.set("")
-                        notes_upload_subject_box.set("")
-                        notes_upload_module_box.set("")
+                        destination_blob = storage.bucket().blob(
+                            f"ForApproval/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
                     elif current_user_type == "Student":
-                        storage.child(
-                            f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                            pdf_data)
-                        # print("PDF uploaded successfully!")
-                        notes_upload_error_label.configure(text='PDF uploaded successfully!')
-                        notes_upload_filename_entry.delete(0, END)
-                        notes_upload_type_box.set("")
-                        notes_upload_course_box.set("")
-                        notes_upload_branch_box.set("")
-                        notes_upload_year_box.set("")
-                        notes_upload_subject_box.set("")
-                        notes_upload_module_box.set("")
+                        destination_blob = storage.bucket().blob(
+                            f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
+                    destination_blob.upload_from_filename(pdf_path)
+                    # print("PDF uploaded successfully!")
+                    notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                    notes_upload_filename_entry.delete(0, END)
+                    notes_upload_type_box.set("")
+                    notes_upload_course_box.set("")
+                    notes_upload_branch_box.set("")
+                    notes_upload_year_box.set("")
+                    notes_upload_subject_box.set("")
+                    notes_upload_module_box.set("")
         else:
             notes_upload_error_label.configure(text='Fill all fields!')
 
@@ -781,7 +769,6 @@ def upload_pdf_using_dialog():
         else:
             notes_upload_error_label.configure(text="Fill all fields!")
             # print("Please provide all the required information.")
-
 
 
 def select_destination_folder():
@@ -2121,9 +2108,8 @@ signup_button = CTkButton(master=signup_login_frame, text="Create User", fg_colo
 signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 
 
-def approval_notes(pdf_path,approved,course,branch,year,subject,module,file_name):
-    # when making the gui make it a button click so if 1st button then we send that to normal notes path
-    if approved == 1:  # when 1st button is clicked
+def approval_notes(pdf_path, approved, course, branch, year, subject, module, file_name):
+    if approved == 1:
         try:
             storage_client = storage.bucket()
             source_blob = storage_client.blob(pdf_path)
@@ -2137,8 +2123,7 @@ def approval_notes(pdf_path,approved,course,branch,year,subject,module,file_name
             source_blob.delete()
         except Exception as e:
             print("Error:", e)
-    if approved == 2:  # when 2nd button is clicked
-        #delete_note('Notes', pdf_path, note_id, 'Teacher')  # use that function
+    if approved == 2:
         print('deleted')
 def list_approval_notes():
     global notes_for_approval
