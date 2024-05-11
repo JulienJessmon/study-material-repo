@@ -263,8 +263,8 @@ class UserProfile():  # ctk.Ctk):
         imgbytes = BytesIO()
         self.img.save(imgbytes, format='PNG')
         imgbytes.seek(0)
-        storage.child(f'Profile_Pics/' + self.id).put(imgbytes, content_type='image/png')
-        self.img_url = storage.child(f'Profile_Pics/' + self.id).get_url(None)  # DO CHANGE THE NAME TO THE ONE CHOSEN
+        sstorage.child(f'Profile_Pics/' + self.id).put(imgbytes, content_type='image/png')
+        self.img_url = sstorage.child(f'Profile_Pics/' + self.id).get_url(None)  # DO CHANGE THE NAME TO THE ONE CHOSEN
         query1 = db.collection('userCollection').document(id)
         query1.update({"image_url": self.img_url})
         self.getImage(profile_image_label)
