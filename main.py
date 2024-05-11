@@ -1,6 +1,6 @@
-import os
-import requests
+import tempfile
 from io import BytesIO
+from google.cloud import storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 import tkinter as tk
 import firebase_admin
@@ -10,7 +10,6 @@ from PIL import Image, ImageTk
 from customtkinter import *
 from customtkinter import filedialog
 from firebase_admin import credentials, firestore, storage
-
 
 cred = credentials.Certificate({
     "type": "service_account",
@@ -37,6 +36,7 @@ firebase_admin.initialize_app(cred, {
 })
 db = firestore.client()
 bucket = storage.bucket()
+
 config = {
     "apiKey": "AIzaSyCtubeFcnQtDDC0Algoy09TvtvgjJyRojA",
     "authDomain": "study-material-repo.firebaseapp.com",
@@ -49,7 +49,7 @@ config = {
 }
 
 firebase = pyrebase.initialize_app(config)
-storage = firebase.storage()
+sstorage = firebase.storage()
 
 script_directory = os.path.dirname(os.path.realpath(__file__))
 images_directory = os.path.join(script_directory, 'Images')
@@ -123,6 +123,8 @@ videos_file_names_teacher = []
 videos_file_names_student = []
 file_names = []
 admin_logged = False
+
+notes_for_approval = []
 
 loggedInUser = ''
 password = ''
@@ -210,34 +212,35 @@ class UserProfile():  # ctk.Ctk):
         #print(self.videodata)
 
     def PDFs(self,profile_uploaded_menu_frame):
-        path = []
-        field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
-        query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
-        doc = query1.get()
-        path = {}
-        for i in doc:
-            document_id = i.id
-            i = i.to_dict()
-            value = i['link'] + '/' + i['filename']
-            self.notedata.append(i['filename'])
-            path[document_id] = value
-        # print(self.notedata)
-        # print(path)   Directories in path
-        for frame in profile_uploaded_menu_frame.winfo_children():
-            frame.destroy()
-        for id, note in path.items():
-            frame = CTkFrame(master=profile_uploaded_menu_frame, fg_color='#ffffff')
-            frame.pack(fill='x',pady=5,padx=5)
-            text_frame = CTkFrame(master=frame,fg_color='#ffffff')
-            text_frame.pack(side=LEFT)
-            link_list = note.split('/')
-            title_text = link_list[-1]
-            title = CTkLabel(master=text_frame, text=title_text,font = ("Arial Bold", 18),text_color = '#1f61a5')
-            title.pack(side=TOP, padx=10, anchor=NW)
-            link = CTkLabel(master=text_frame,text=note,font = ("Arial Bold", 12))
-            link.pack(side=BOTTOM,padx=10,anchor=NW)
-            delete_button = CTkButton(master=frame,text='',width=40,height=40,image=delete_img,fg_color='#de1313',hover_color='#bd0a0a', command=lambda link=note, nid=id: delete_note('Notes',link,nid,current_user_type))
-            delete_button.pack(side=RIGHT,padx=10)
+        if current_user_type == 'Teacher' or current_user_type == 'Student':
+            path = []
+            field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
+            query1 = db.collection('pdfData').where(filter=field_filter)  # PDF data
+            doc = query1.get()
+            path = {}
+            for i in doc:
+                document_id = i.id
+                i = i.to_dict()
+                value = i.get('link', '') + '/' + i.get('filename', '')
+                self.notedata.append(i['filename'])
+                path[document_id] = value
+            # print(self.notedata)
+            # print(path)   Directories in path
+            for frame in profile_uploaded_menu_frame.winfo_children():
+                frame.destroy()
+            for id, note in path.items():
+                frame = CTkFrame(master=profile_uploaded_menu_frame, fg_color='#ffffff')
+                frame.pack(fill='x',pady=5,padx=5)
+                text_frame = CTkFrame(master=frame,fg_color='#ffffff')
+                text_frame.pack(side=LEFT)
+                link_list = note.split('/')
+                title_text = link_list[-1]
+                title = CTkLabel(master=text_frame, text=title_text,font = ("Arial Bold", 18),text_color = '#1f61a5')
+                title.pack(side=TOP, padx=10, anchor=NW)
+                link = CTkLabel(master=text_frame,text=note,font = ("Arial Bold", 12))
+                link.pack(side=BOTTOM,padx=10,anchor=NW)
+                delete_button = CTkButton(master=frame,text='',width=40,height=40,image=delete_img,fg_color='#de1313',hover_color='#bd0a0a', command=lambda link=note, nid=id: delete_note('Notes',link,nid,current_user_type))
+                delete_button.pack(side=RIGHT,padx=10)
 
 
 
@@ -309,14 +312,14 @@ def priority_sort():
     for name in notes_file_names_teacher:
         display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
         try:
-            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
-                                                                                                  display_name)
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',display_name)
         except:
             print('Exception')
         priority_value = int(note_upvotes) - int(note_downvotes)
         new_array.append(name)
         array_priority.append(priority_value)
     notes_file_names_teacher,array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global notes_file_names_student
@@ -331,6 +334,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     notes_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global qb_file_names_teacher
@@ -345,6 +349,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     qb_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global qb_file_names_student
@@ -358,7 +363,8 @@ def priority_sort():
         priority_value = int(note_upvotes) - int(note_downvotes)
         new_array.append(name)
         array_priority.append(priority_value)
-    notes_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+    qb_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global videos_file_names_teacher
@@ -374,6 +380,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     videos_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
+
     new_array = []
     array_priority = []
     global videos_file_names_student
@@ -389,6 +396,7 @@ def priority_sort():
         new_array.append(name)
         array_priority.append(priority_value)
     videos_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
+
 
 
 def upvote_ans(id,up_count_display,down_count_display):
@@ -661,7 +669,6 @@ def select_pdf_file():
     file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     return file_path
 
-
 def upload_pdf_using_dialog():
     material_type = notes_upload_type_box.get()
     if material_type == 'Notes':
@@ -677,42 +684,34 @@ def upload_pdf_using_dialog():
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
                     if current_user_type == "Teacher":
-                        storage.child(
-                            f"ForApproval/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                            pdf_data)
-                        # print("PDF uploaded successfully!")
-                        notes_upload_error_label.configure(text='PDF uploaded successfully!')
-                        notes_upload_filename_entry.delete(0, END)
-                        notes_upload_type_box.set("")
-                        notes_upload_course_box.set("")
-                        notes_upload_branch_box.set("")
-                        notes_upload_year_box.set("")
-                        notes_upload_subject_box.set("")
-                        notes_upload_module_box.set("")
+                        destination_blob = storage.bucket().blob(
+                            f"ForApproval/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
                     elif current_user_type == "Student":
-                        storage.child(
-                            f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                            pdf_data)
-                        # print("PDF uploaded successfully!")
-                        notes_upload_error_label.configure(text='PDF uploaded successfully!')
-                        notes_upload_filename_entry.delete(0, END)
-                        notes_upload_type_box.set("")
-                        notes_upload_course_box.set("")
-                        notes_upload_branch_box.set("")
-                        notes_upload_year_box.set("")
-                        notes_upload_subject_box.set("")
-                        notes_upload_module_box.set("")
+                        destination_blob = storage.bucket().blob(
+                            f"Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
+                    destination_blob.upload_from_filename(pdf_path)
+                    # print("PDF uploaded successfully!")
+                    notes_upload_error_label.configure(text='PDF uploaded successfully!')
+                    notes_upload_filename_entry.delete(0, END)
+                    notes_upload_type_box.set("")
+                    notes_upload_course_box.set("")
+                    notes_upload_branch_box.set("")
+                    notes_upload_year_box.set("")
+                    notes_upload_subject_box.set("")
+                    notes_upload_module_box.set("")
+                    db.collection("pdfData").add({
+                        "filename": file_name,
+                        "upvotes": 0,
+                        "downvotes": 0,
+                        "uploadedBy": loggedInUser,
+                        "downloads": 0,
+                        "link": f"/Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
+                    })
         else:
             notes_upload_error_label.configure(text='Fill all fields!')
 
-            db.collection("pdfData").add({
-                "filename": file_name,
-                "upvotes": 0,
-                "downvotes": 0,
-                "uploadedBy": loggedInUser,
-                "downloads": 0,
-                "link": f"/Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
-            })
 
     elif material_type == 'Question Banks':
         file_name = notes_upload_filename_entry.get()
@@ -726,9 +725,10 @@ def upload_pdf_using_dialog():
             if pdf_path:
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
-                    storage.child(
-                        f"Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                        pdf_data)
+                    destination_blob = storage.bucket().blob(
+                        f"Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                    )
+                    destination_blob.upload_from_filename(pdf_path)
                     # print("PDF uploaded successfully!")
                     notes_upload_error_label.configure(text='PDF uploaded successfully!')
                     notes_upload_filename_entry.delete(0, END)
@@ -738,16 +738,16 @@ def upload_pdf_using_dialog():
                     notes_upload_year_box.set("")
                     notes_upload_subject_box.set("")
                     notes_upload_module_box.set("")
+                    db.collection("qbData").add({
+                        "filename": file_name,
+                        "upvotes": 0,
+                        "downvotes": 0,
+                        "uploadedBy": loggedInUser,
+                        "downloads": 0,
+                        "link": f"/Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
+                    })
         else:
             notes_upload_error_label.configure(text='Fill all fields!')
-        db.collection("qbData").add({
-            "filename": file_name,
-            "upvotes": 0,
-            "downvotes": 0,
-            "uploadedBy": loggedInUser,
-            "downloads": 0,
-            "link": f"/Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
-        })
     elif material_type == 'Videos':
         file_name = notes_upload_filename_entry.get()
         course = notes_upload_course_box.get()
@@ -759,20 +759,13 @@ def upload_pdf_using_dialog():
             video_path = select_video_file()
             if video_path:
                 with open(video_path, "rb") as f:
-                    video_data = f.read()
-                    storage.child(
-                        f"Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/" + file_name).put(
-                        video_data)
-                    # print("Video uploaded successfully!")
-                    notes_upload_error_label.configure(text="Video uploaded successfully!")
-                    db.collection("videoData").add({
-                        "filename": file_name,
-                        "upvotes": 0,
-                        "downvotes": 0,
-                        "uploadedBy": loggedInUser,  # remove the "" after testing
-                        "downloads": 0,
-                        "link": f"/Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
-                    })
+                    pdf_data = f.read()
+                    destination_blob = storage.bucket().blob(
+                        f"Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                    )
+                    destination_blob.upload_from_filename(video_path)
+                    # print("PDF uploaded successfully!")
+                    notes_upload_error_label.configure(text='PDF uploaded successfully!')
                     notes_upload_filename_entry.delete(0, END)
                     notes_upload_type_box.set("")
                     notes_upload_course_box.set("")
@@ -780,11 +773,16 @@ def upload_pdf_using_dialog():
                     notes_upload_year_box.set("")
                     notes_upload_subject_box.set("")
                     notes_upload_module_box.set("")
-            # else:
-            # print("File selection canceled.")
+                    db.collection("videoData").add({
+                        "filename": file_name,
+                        "upvotes": 0,
+                        "downvotes": 0,
+                        "uploadedBy": loggedInUser,
+                        "downloads": 0,
+                        "link": f"/Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}"
+                    })
         else:
-            notes_upload_error_label.configure(text="Fill all fields!")
-            # print("Please provide all the required information.")
+            notes_upload_error_label.configure(text='Fill all fields!')
 
 
 def select_destination_folder():
@@ -795,7 +793,7 @@ def select_destination_folder():
 
 
 def download_pdf(filename, note_type, id, count_frame):
-    pdf_ref = storage.child(f"{filename}")
+    pdf_ref = sstorage.child(f"{filename}")
     if note_type == 'Notes':
         doc_ref = db.collection('pdfData').document(id)
     elif note_type == 'Question Banks':
@@ -894,6 +892,9 @@ def login():
                 loggedin_profile.getImage(profile_image_label)
                 display_profile_notes()
                 current_user_type = ut1
+                if current_user_type == 'Admin':
+                    list_approval_notes()
+                    display_approval_notes()
                 flag = 1
                 set_text("")
                 username_label.configure(text=f'Username : {username}')
@@ -1060,6 +1061,8 @@ def check_and_add_field(collection_name, document_id, field_name):
 
 def get_note_value(note_type, user_type, note_name):
     check_link = f'/{note_type}/' + current_search_dir + f'{user_type}'
+    if note_name.endswith('.pdf'):
+        notename = note_name.strip('.pdf')
     if note_type == 'Notes':
         docs = db.collection('pdfData').stream()
     elif note_type == 'Question Banks':
@@ -1314,12 +1317,8 @@ def display_note_menu():
             note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
                                                                                     display_name)
         except:
-            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-            frame.pack(fill='x', pady=5)
-            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
-                                           text_color='#1f61a5')
-            uploader_name_title.pack(side=TOP, padx=5)
-            break
+            continue
+
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
@@ -1359,30 +1358,25 @@ def display_note_menu():
         parent_frame = student_pdf_display
         try:
             note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Student',
-                                                                                                  display_name)
+                                                                                    display_name)
         except:
-            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-            frame.pack(fill='x', pady=5)
-            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
-                                           text_color='#1f61a5')
-            uploader_name_title.pack(side=TOP, padx=5)
-            break
+            continue
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
         uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
-                                       text_color='#1f61a5')
+                                               text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
-                                 text_color='#1f61a5')
+                                         text_color='#1f61a5')
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Notes',id, count_frame))
+                                                    command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Notes',id, count_frame))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
@@ -1392,19 +1386,13 @@ def display_note_menu():
         display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
-                                        text_color='#1f61a5')
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
-                                            command=lambda down_count_display=display_downvote_count,
-                                                           up_count_display=display_upvote_count,
-                                                           id=note_id: downvote_note('Notes', up_count_display,
-                                                                                     down_count_display, id))
+                                                text_color='#1f61a5')
+        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img, command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count, id=note_id:downvote_note('Notes', up_count_display, down_count_display, id))
         display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_downvote_count.pack(side=BOTTOM)
 
         display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                          command=lambda down_count_display=display_downvote_count,
-                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
-                                              'Notes', up_count_display, down_count_display, id))
+                                                  command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count,id=note_id: upvote_note('Notes', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_teacher:
@@ -1414,12 +1402,7 @@ def display_note_menu():
             note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Teacher',
                                                                                                   display_name)
         except:
-            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-            frame.pack(fill='x', pady=5)
-            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
-                                           text_color='#1f61a5')
-            uploader_name_title.pack(side=TOP, padx=5)
-            break
+            continue
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
@@ -1468,13 +1451,7 @@ def display_note_menu():
                                                                                                   'Student',
                                                                                                   display_name)
         except:
-            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-            frame.pack(fill='x', pady=5)
-            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
-                                           text_color='#1f61a5')
-            uploader_name_title.pack(side=TOP, padx=5)
-            print(display_name)
-            break
+            continue
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
@@ -1523,12 +1500,7 @@ def display_note_menu():
                                                                                                   'Teacher',
                                                                                                   display_name)
         except:
-            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-            frame.pack(fill='x', pady=5)
-            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
-                                           text_color='#1f61a5')
-            uploader_name_title.pack(side=TOP, padx=5)
-            break
+            continue
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
@@ -1577,12 +1549,7 @@ def display_note_menu():
                                                                                                   'Student',
                                                                                                   display_name)
         except:
-            frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-            frame.pack(fill='x', pady=5)
-            uploader_name_title = CTkLabel(master=frame, text='No notes uploaded', font=("Arial Bold", 14),
-                                           text_color='#1f61a5')
-            uploader_name_title.pack(side=TOP, padx=5)
-            break
+            continue
         frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
         frame.pack(fill='x', pady=5)
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
@@ -1639,6 +1606,7 @@ def search_subjects():
     global notes_file_names_student
     global qb_file_names_student
     global videos_file_names_student
+
 
     course = notes_search_course_box.get()
     branch = notes_search_branch_box.get()
@@ -2120,42 +2088,106 @@ signup_button = CTkButton(master=signup_login_frame, text="Create User", fg_colo
                                                            signup_user_type_box, signup_error_label))
 signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 
+
+def approval_notes(pdf_path, approved, course, branch, year, subject, module, file_name):
+    if approved == 1:
+        try:
+            storage_client = storage.bucket()
+            source_blob = storage_client.blob(pdf_path)
+            local_path = tempfile.mktemp(suffix=".pdf")
+            source_blob.download_to_filename(local_path)
+            destination_blob = storage_client.blob(
+                f"Notes/{course}/{branch}/{year}/{subject}/{module}/Teacher/{file_name}")
+            destination_blob.upload_from_filename(local_path)
+            os.remove(local_path)
+            source_blob.delete()
+            list_approval_notes()
+            display_approval_notes()
+        except Exception as e:
+            print("Error:", e)
+    if approved == 2:
+        print('deleted')
+        try:
+            storage_client = storage.bucket()
+            source_blob = storage_client.blob(pdf_path)
+            local_path = tempfile.mktemp(suffix=".pdf")
+            source_blob.download_to_filename(local_path)
+            os.remove(local_path)
+            source_blob.delete()
+            list_approval_notes()
+            display_approval_notes()
+        except Exception as e:
+            print("Error:", e)
+def list_approval_notes():
+    global notes_for_approval
+    folder = bucket.list_blobs(prefix='ForApproval/')
+    notes_for_approval = [blob.name for blob in folder if blob.name.endswith('/') == False]
+
+def display_approval_notes():
+    for frame in approval_file_frame.winfo_children():
+        frame.pack_forget()
+    for note in notes_for_approval:
+        note_list = note.split('/')
+        display_name = note_list[-1]
+        course = note_list[1]
+        branch = note_list[2]
+        year = note_list[3]
+        subject= note_list[4]
+        module= note_list[5]
+        file_details = f"{subject} : Module - {module}"
+        frame = CTkFrame(master=approval_file_frame, fg_color='#ffffff')
+        frame.pack(fill='x', padx=10, pady=10)
+        text_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        text_frame.pack(side=LEFT, padx=10, pady=10)
+        title = CTkLabel(master=text_frame, text=display_name, font=("Arial Bold", 18), text_color='#1f61a5')
+        title.pack(anchor=NW, side=TOP)
+        link = CTkLabel(master=text_frame, text=file_details, font=("Arial Bold", 12))
+        link.pack(anchor=NW, side=BOTTOM)
+        approve_button = CTkButton(master=frame, text='Approve', font=("ArialBold", 12), command=lambda n=note,c=course,b=branch,y=year,s=subject,m=module,dn=display_name:approval_notes(n,1,c,b,y,s,m,dn))
+        approve_button.pack(side=RIGHT, padx=(5, 10), pady=10)
+        reject_button = CTkButton(master=frame, text='', font=("ArialBold", 12), fg_color='#de1313',
+                                  hover_color='#bd0a0a', width=40, height=40, image=delete_img, command=lambda n=note,c=course,b=branch,y=year,s=subject,m=module,dn=display_name:approval_notes(n,1,c,b,y,s,m,dn))
+        reject_button.pack(side=RIGHT, padx=5, pady=10)
+
 # approval tab
 
-approval_tab_frame = CTkFrame(master=menu_tabs)
-approval_tab_frame = CTkFrame(master=approval_tab_frame)
-approval_tab_frame.pack(fill='both')
+approval_tab_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
+
+approval_frame = CTkFrame(master=approval_tab_frame, fg_color='#ffffff')
+approval_frame.pack(expand=True,fill='both',padx=10,pady=10)
+
+approval_title = CTkLabel(master=approval_frame,text='Approve', font=("Arial Bold", 24), text_color='#1f61a5')
+approval_title.pack(side=TOP,pady=10)
+
+approval_file_frame = CTkScrollableFrame(master=approval_frame,fg_color='#e1e1f0')
+approval_file_frame.pack(expand=True,fill='both',padx=10,pady=10)
 
 
 # user signup
 def create_user_tab_check():
-    global admin_logged
-    if current_user_type == 'Admin' and not admin_logged:
-        admin_logged = True
-        for frame in menu_tab_button_frame.winfo_children():
-            frame.pack_forget()
+    if current_user_type == 'Admin':
+        for u_frame in menu_tab_button_frame.winfo_children():
+            u_frame.pack_forget()
         profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
         approve_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
         create_user_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-        for frame in buttons_menu.winfo_children():
-            frame.pack_forget()
+        for u_frame in buttons_menu.winfo_children():
+            u_frame.pack_forget()
         profile_button.pack(pady=20, padx=15)
         approve_button.pack(pady=20, padx=15)
         create_user_button.pack(pady=20, padx=15)
 
     else:
-        if admin_logged:
-            for frame in menu_tab_button_frame.winfo_children():
-                frame.pack_forget()
-            notes_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-            qna_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-            profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-            for frame in buttons_menu.winfo_children():
-                frame.pack_forget()
-            notes_button.pack(pady=20, padx=15)
-            qna_button.pack(pady=20, padx=15)
-            profile_button.pack(pady=20, padx=15)
-            admin_logged = False
+        for u_frame in menu_tab_button_frame.winfo_children():
+            u_frame.pack_forget()
+        notes_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        qna_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        for u_frame in buttons_menu.winfo_children():
+            u_frame.pack_forget()
+        notes_button.pack(pady=20, padx=15)
+        qna_button.pack(pady=20, padx=15)
+        profile_button.pack(pady=20, padx=15)
 
 
 # run
