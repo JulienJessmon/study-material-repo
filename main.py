@@ -1516,7 +1516,7 @@ def display_note_menu():
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Videos',id, count_frame))
+                                            command=lambda n=name: download_video(n))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
@@ -1565,7 +1565,7 @@ def display_note_menu():
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Videos',id, count_frame))
+                                            command=lambda n=name: download_video(n))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
@@ -1635,7 +1635,7 @@ def select_video_file():
 
 
 def download_video(filename):
-    pdf_ref = storage.child(f"{filename}")
+    pdf_ref = sstorage.child(f"{filename}")
 
     try:
         url = pdf_ref.get_url(None)
