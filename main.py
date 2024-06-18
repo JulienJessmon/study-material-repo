@@ -954,6 +954,7 @@ def logout():
     id_entry.delete(0, END)
     password_entry.delete(0, END)
     back_to_qframe()
+    notes_upload_error_label.configure(text='')
     login_page.pack(expand=True, fill='both')
 
 
@@ -1659,6 +1660,7 @@ def upload_menu_toggle():
         notes_upload_menu_frame_container.pack_forget()
     else:
         notes_upload_menu_frame_container.pack(side='right', fill='y')
+        notes_upload_error_label.configure(text='')
 
 
 # GUI Code
