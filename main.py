@@ -94,6 +94,8 @@ search_img_data = Image.open(os.path.join(img_dir, 'search.png'))
 upload_img_data = Image.open(os.path.join(img_dir, 'upload.png'))
 upvote_img_data = Image.open(os.path.join(img_dir, 'upvote.png'))
 downvote_img_data = Image.open(os.path.join(img_dir, 'downvote.png'))
+upvote_view_img_data = Image.open(os.path.join(img_dir, 'upvote_view.png'))
+downvote_view_img_data = Image.open(os.path.join(img_dir, 'downvote_view.png'))
 download_img_data = Image.open(os.path.join(img_dir, 'download.png'))
 default_user_img_data = Image.open(os.path.join(img_dir, 'Default_user_img.png'))
 delete_img_data = Image.open(os.path.join(img_dir, 'delete.png'))
@@ -106,10 +108,11 @@ search_img = CTkImage(dark_image=search_img_data, light_image=search_img_data, s
 upload_img = CTkImage(dark_image=upload_img_data, light_image=upload_img_data, size=(17, 17))
 upvote_img = CTkImage(dark_image=upvote_img_data, light_image=upvote_img_data, size=(17, 17))
 downvote_img = CTkImage(dark_image=downvote_img_data, light_image=downvote_img_data, size=(17, 17))
+upvote_view_img = CTkImage(dark_image=upvote_view_img_data, light_image=upvote_view_img_data, size=(17, 17))
+downvote_view_img = CTkImage(dark_image=downvote_view_img_data, light_image=downvote_view_img_data, size=(17, 17))
 download_img = CTkImage(dark_image=download_img_data, light_image=download_img_data, size=(17, 17))
 delete_img = CTkImage(dark_image=delete_img_data, light_image=delete_img_data, size=(17, 17))
-default_user_img = CTkImage(dark_image=default_user_img_data, light_image=default_user_img_data, size=(200,200))
-
+default_user_img = CTkImage(dark_image=default_user_img_data, light_image=default_user_img_data, size=(200, 200))
 
 current_search_dir = ''
 current_notes_search_dir = ''
@@ -157,7 +160,7 @@ class UserProfile():  # ctk.Ctk):
         self.id = document_ids[0]
         self.type = data['UserType']  # Set user type
 
-    def changePassword(self,change_password_entry,change_password_menu_error_label):
+    def changePassword(self, change_password_entry, change_password_menu_error_label):
         field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
         query1 = db.collection('userCollection').where(filter=field_filter)
         doc = query1.get()
@@ -166,11 +169,12 @@ class UserProfile():  # ctk.Ctk):
         query1 = db.collection('userCollection').document(document_ids[0])
         doc = query1.get()
         data = doc.to_dict()
-        #print(data)
+        # print(data)
         newPassword = change_password_entry.get()
-        flag=0
+        flag = 0
         if all({newPassword}):
-            if (newPassword.islower() is False) and (newPassword.isalnum() is False) and (newPassword.isspace() is False) and (
+            if (newPassword.islower() is False) and (newPassword.isalnum() is False) and (
+                    newPassword.isspace() is False) and (
                     len(newPassword) >= 8):
                 has_number = False
                 for char in newPassword:
@@ -201,7 +205,6 @@ class UserProfile():  # ctk.Ctk):
                 text="Set all required fields")
         change_password_entry.delete(0, END)
 
-
     def video(self):
         field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
         query1 = db.collection('videoData').where(filter=field_filter)  # Video data
@@ -209,9 +212,9 @@ class UserProfile():  # ctk.Ctk):
         for i in doc:
             i = i.to_dict()
             self.videodata.append(i['filename'])
-        #print(self.videodata)
+        # print(self.videodata)
 
-    def PDFs(self,profile_uploaded_menu_frame):
+    def PDFs(self, profile_uploaded_menu_frame):
         if current_user_type == 'Teacher' or current_user_type == 'Student':
             path = []
             field_filter = FieldFilter('uploadedBy', '==', self.name)  # Filter
@@ -230,21 +233,22 @@ class UserProfile():  # ctk.Ctk):
                 frame.destroy()
             for id, note in path.items():
                 frame = CTkFrame(master=profile_uploaded_menu_frame, fg_color='#ffffff')
-                frame.pack(fill='x',pady=5,padx=5)
-                text_frame = CTkFrame(master=frame,fg_color='#ffffff')
+                frame.pack(fill='x', pady=5, padx=5)
+                text_frame = CTkFrame(master=frame, fg_color='#ffffff')
                 text_frame.pack(side=LEFT)
                 link_list = note.split('/')
                 title_text = link_list[-1]
-                title = CTkLabel(master=text_frame, text=title_text,font = ("Arial Bold", 18),text_color = '#1f61a5')
+                title = CTkLabel(master=text_frame, text=title_text, font=("Arial Bold", 18), text_color='#1f61a5')
                 title.pack(side=TOP, padx=10, anchor=NW)
-                link = CTkLabel(master=text_frame,text=note,font = ("Arial Bold", 12))
-                link.pack(side=BOTTOM,padx=10,anchor=NW)
-                delete_button = CTkButton(master=frame,text='',width=40,height=40,image=delete_img,fg_color='#de1313',hover_color='#bd0a0a', command=lambda link=note, nid=id: delete_note('Notes',link,nid,current_user_type))
-                delete_button.pack(side=RIGHT,padx=10)
+                link = CTkLabel(master=text_frame, text=note, font=("Arial Bold", 12))
+                link.pack(side=BOTTOM, padx=10, anchor=NW)
+                delete_button = CTkButton(master=frame, text='', width=40, height=40, image=delete_img,
+                                          fg_color='#de1313', hover_color='#bd0a0a',
+                                          command=lambda link=note, nid=id: delete_note('Notes', link, nid,
+                                                                                        current_user_type))
+                delete_button.pack(side=RIGHT, padx=10)
 
-
-
-    def setProfileImage(self,profile_image_label):
+    def setProfileImage(self, profile_image_label):
         field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
         query1 = db.collection('userCollection').where(filter=field_filter)
         doc = query1.get()
@@ -269,7 +273,7 @@ class UserProfile():  # ctk.Ctk):
         query1.update({"image_url": self.img_url})
         self.getImage(profile_image_label)
 
-    def getImage(self,profile_image_label):
+    def getImage(self, profile_image_label):
 
         field_filter = FieldFilter('Username', '==', self.name)  # Filter to user j1
         query1 = db.collection('userCollection').document(self.id)
@@ -293,9 +297,9 @@ class UserProfile():  # ctk.Ctk):
         self.password = password
         self.setData()
         self.video()
-        #self.PDFs(profile_uploaded_menu_frame)
-        #self.setProfileImage()
-        #self.getImage()
+        # self.PDFs(profile_uploaded_menu_frame)
+        # self.setProfileImage()
+        # self.getImage()
 
 
 def sort_notes_and_priority(students, marks):
@@ -305,6 +309,7 @@ def sort_notes_and_priority(students, marks):
     sorted_marks = [mark for _, mark in zipped]
     return sorted_students, sorted_marks
 
+
 def priority_sort():
     new_array = []
     array_priority = []
@@ -312,13 +317,14 @@ def priority_sort():
     for name in notes_file_names_teacher:
         display_name = name.replace("Notes/" + current_search_dir + "Teacher/", "")
         try:
-            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',display_name)
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
+                                                                                                  display_name)
         except:
             print('Exception')
         priority_value = int(note_upvotes) - int(note_downvotes)
         new_array.append(name)
         array_priority.append(priority_value)
-    notes_file_names_teacher,array_priority = sort_notes_and_priority(new_array, array_priority)
+    notes_file_names_teacher, array_priority = sort_notes_and_priority(new_array, array_priority)
 
     new_array = []
     array_priority = []
@@ -341,7 +347,8 @@ def priority_sort():
     for name in qb_file_names_teacher:
         display_name = name.replace("Question Banks/" + current_search_dir + "Teacher/", "")
         try:
-            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Teacher',
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks',
+                                                                                                  'Teacher',
                                                                                                   display_name)
         except:
             print('Exception')
@@ -356,7 +363,8 @@ def priority_sort():
     for name in qb_file_names_student:
         display_name = name.replace("Question Banks/" + current_search_dir + "Student/", "")
         try:
-            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Student',
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks',
+                                                                                                  'Student',
                                                                                                   display_name)
         except:
             print('Exception')
@@ -398,8 +406,7 @@ def priority_sort():
     videos_file_names_student, array_priority = sort_notes_and_priority(new_array, array_priority)
 
 
-
-def upvote_ans(id,up_count_display,down_count_display):
+def upvote_ans(id, up_count_display, down_count_display):
     doc_ref = db.collection('answerData').document(id)
     user_doc_ref = db.collection('userCollection').document(loggedInUserID)
     user_doc = user_doc_ref.get()
@@ -425,7 +432,7 @@ def upvote_ans(id,up_count_display,down_count_display):
         down_count_display.configure(text=str(new_downvotes))
 
 
-def downvote_ans(id,up_count_display,down_count_display):
+def downvote_ans(id, up_count_display, down_count_display):
     doc_ref = db.collection('answerData').document(id)
     user_doc_ref = db.collection('userCollection').document(loggedInUserID)
     user_doc = user_doc_ref.get()
@@ -669,6 +676,7 @@ def select_pdf_file():
     file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
     return file_path
 
+
 def upload_pdf_using_dialog():
     material_type = notes_upload_type_box.get()
     if material_type == 'Notes':
@@ -685,7 +693,7 @@ def upload_pdf_using_dialog():
                     pdf_data = f.read()
                     if current_user_type == "Teacher":
                         destination_blob = storage.bucket().blob(
-                            f"ForApproval/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                            f"ForApproval/Notes/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
                         )
                     elif current_user_type == "Student":
                         destination_blob = storage.bucket().blob(
@@ -725,9 +733,14 @@ def upload_pdf_using_dialog():
             if pdf_path:
                 with open(pdf_path, "rb") as f:
                     pdf_data = f.read()
-                    destination_blob = storage.bucket().blob(
-                        f"Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
-                    )
+                    if current_user_type == "Teacher":
+                        destination_blob = storage.bucket().blob(
+                            f"ForApproval/Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
+                    elif current_user_type == "Student":
+                        destination_blob = storage.bucket().blob(
+                            f"Question Banks/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
                     destination_blob.upload_from_filename(pdf_path)
                     # print("PDF uploaded successfully!")
                     notes_upload_error_label.configure(text='PDF uploaded successfully!')
@@ -760,9 +773,14 @@ def upload_pdf_using_dialog():
             if video_path:
                 with open(video_path, "rb") as f:
                     pdf_data = f.read()
-                    destination_blob = storage.bucket().blob(
-                        f"Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
-                    )
+                    if current_user_type == "Teacher":
+                        destination_blob = storage.bucket().blob(
+                            f"ForApproval/Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
+                    elif current_user_type == "Student":
+                        destination_blob = storage.bucket().blob(
+                            f"Videos/{course}/{branch}/{year}/{subject}/{module}/{current_user_type}/{file_name}"
+                        )
                     destination_blob.upload_from_filename(video_path)
                     # print("PDF uploaded successfully!")
                     notes_upload_error_label.configure(text='PDF uploaded successfully!')
@@ -808,13 +826,37 @@ def download_pdf(filename, note_type, id, count_frame):
         response.raise_for_status()
         destination_folder = select_destination_folder()
         os.makedirs(destination_folder, exist_ok=True)
-        file_path = os.path.join(destination_folder, os.path.basename(filename) + ".pdf")
+        if note_type == 'Videos':
+            file_path = os.path.join(destination_folder, os.path.basename(filename) + ".mp4")
+        else:
+            file_path = os.path.join(destination_folder, os.path.basename(filename) + ".pdf")
 
         with open(file_path, "wb") as f:
             f.write(response.content)
-        downloads = downloads+1
+        downloads = downloads + 1
         doc_ref.update({'downloads': downloads})
         count_frame.configure(text=str(downloads))
+        # print("PDF downloaded successfully to:", file_path)
+    except requests.exceptions.RequestException:
+        # print("Error downloading PDF:", e)
+        download_pdf(filename)
+
+
+def download_pdf_approval(filename, note_type):
+    pdf_ref = sstorage.child(f"{filename}")
+    try:
+        url = pdf_ref.get_url(None)
+        response = requests.get(url)
+        response.raise_for_status()
+        destination_folder = select_destination_folder()
+        os.makedirs(destination_folder, exist_ok=True)
+        if note_type == 'Videos':
+            file_path = os.path.join(destination_folder, os.path.basename(filename) + ".mp4")
+        else:
+            file_path = os.path.join(destination_folder, os.path.basename(filename) + ".pdf")
+
+        with open(file_path, "wb") as f:
+            f.write(response.content)
         # print("PDF downloaded successfully to:", file_path)
     except requests.exceptions.RequestException:
         # print("Error downloading PDF:", e)
@@ -826,7 +868,7 @@ def show_tabs(tab_name):
     menu_tab_button_frame.pack(fill='x')
     menu_tabs.pack(expand=True, fill='both')
     if tab_name == 'Notes':
-        notes_tab_frame.pack(expand=True,fill='both')
+        notes_tab_frame.pack(expand=True, fill='both')
         qna_display_frame.pack_forget()
         user_profile_frame.pack_forget()
         approval_tab_frame.pack_forget()
@@ -865,8 +907,11 @@ def next_page(current_page, next_page_frame):
 def set_text(text):  # function to set error text
     error_label.configure(text=text)
 
+
 def display_profile_notes():
     loggedin_profile.PDFs(profile_uploaded_notes_display_frame)
+
+
 def login():
     username = id_entry.get()
     password = password_entry.get()
@@ -888,7 +933,7 @@ def login():
                 global loggedin_profile
                 loggedInUser = username
                 loggedInUserID = doc.id
-                loggedin_profile = UserProfile(loggedInUser,password)
+                loggedin_profile = UserProfile(loggedInUser, password)
                 loggedin_profile.getImage(profile_image_label)
                 display_profile_notes()
                 current_user_type = ut1
@@ -904,7 +949,7 @@ def login():
                 current_user_title.configure(text=loggedInUser)
                 create_user_tab_check()
                 break
-                #exit(0)   #exit the function if login is successful
+                # exit(0)   #exit the function if login is successful
 
         if flag == 0:
             # print("Wrong username or password, try again")
@@ -919,6 +964,7 @@ def change_password_menu_toggle():
         change_password_menu_frame.pack_forget()
     else:
         change_password_menu_frame.pack(expand=True, fill='x', pady=10, padx=10)
+
 
 def logout():
     for frame in teacher_pdf_display.winfo_children():
@@ -1081,8 +1127,9 @@ def get_note_value(note_type, user_type, note_name):
             doc_downloads = doc_data.get('downloads')
             doc_uploader = doc_data.get('uploadedBy')
             doc_id = doc.id
-            return doc_upvotes,doc_downvotes,doc_downloads,doc_uploader,doc_id
+            return doc_upvotes, doc_downvotes, doc_downloads, doc_uploader, doc_id
             break
+
 
 def downvote_note(note_type, up_count_display, down_count_display, id):
     if note_type == 'Notes':
@@ -1182,6 +1229,7 @@ def downvote_note(note_type, up_count_display, down_count_display, id):
             down_count_display.configure(text=str(new_downvotes))
             up_count_display.configure(text=str(new_upvotes))
 
+
 def upvote_note(note_type, up_count_display, down_count_display, id):
     if note_type == 'Notes':
         doc_ref = db.collection('pdfData').document(id)
@@ -1204,7 +1252,7 @@ def upvote_note(note_type, up_count_display, down_count_display, id):
                 upvoted_array_field.append(new_value)
                 new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
             user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
-            doc_ref.update({'upvotes': new_upvotes,'downvotes': new_downvotes})
+            doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
             up_count_display.configure(text=str(new_upvotes))
             down_count_display.configure(text=str(new_downvotes))
         else:
@@ -1236,7 +1284,7 @@ def upvote_note(note_type, up_count_display, down_count_display, id):
                 upvoted_array_field.append(new_value)
                 new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
             user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
-            doc_ref.update({'upvotes': new_upvotes,'downvotes': new_downvotes})
+            doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
             up_count_display.configure(text=str(new_upvotes))
             down_count_display.configure(text=str(new_downvotes))
         else:
@@ -1268,7 +1316,7 @@ def upvote_note(note_type, up_count_display, down_count_display, id):
                 upvoted_array_field.append(new_value)
                 new_upvotes = doc_ref.get().to_dict().get('upvotes', 0) + 1
             user_doc_ref.update({'upvotedNotes': upvoted_array_field, 'downvotedNotes': downvoted_array_field})
-            doc_ref.update({'upvotes': new_upvotes,'downvotes': new_downvotes})
+            doc_ref.update({'upvotes': new_upvotes, 'downvotes': new_downvotes})
             up_count_display.configure(text=str(new_upvotes))
             down_count_display.configure(text=str(new_downvotes))
         else:
@@ -1316,7 +1364,7 @@ def display_note_menu():
         parent_frame = teacher_pdf_display
         try:
             note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Teacher',
-                                                                                    display_name)
+                                                                                                  display_name)
         except:
             continue
 
@@ -1325,82 +1373,65 @@ def display_note_menu():
         title_frame = CTkFrame(master=frame, fg_color='#fafafa')
         title_frame.pack(side=LEFT, pady=5, padx=5)
         uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
-                                               text_color='#1f61a5')
+                                       text_color='#1f61a5')
         uploader_name_title.pack(side=TOP, padx=5, anchor=W)
         display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
-                                         text_color='#1f61a5')
+                                 text_color='#1f61a5')
         display_title.pack(side=TOP, padx=5, anchor=W)
         download_frame = CTkFrame(master=frame, fg_color='#ffffff')
         download_frame.pack(side=RIGHT, pady=5, padx=5)
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                                    command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Notes',id, count_frame))
+                                            command=lambda n=name, id=note_id,
+                                                           count_frame=display_download_count: download_pdf(n, 'Notes',
+                                                                                                            id,
+                                                                                                            count_frame))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
-                                                text_color='#1f61a5')
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img, command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count, id=note_id:downvote_note('Notes', up_count_display, down_count_display, id))
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count.pack(side=BOTTOM)
+        if current_user_type == 'Teacher':
+            display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                              text_color='#1f61a5')
+            display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                            text_color='#1f61a5')
+            display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                                command=lambda down_count_display=display_downvote_count,
+                                                               up_count_display=display_upvote_count,
+                                                               id=note_id: downvote_note('Notes', up_count_display,
+                                                                                         down_count_display, id))
+            display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+            display_downvote_count.pack(side=BOTTOM)
 
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                                  command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count,id=note_id: upvote_note('Notes', up_count_display, down_count_display, id))
-        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count.pack(side=BOTTOM)
+            display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                              command=lambda down_count_display=display_downvote_count,
+                                                             up_count_display=display_upvote_count,
+                                                             id=note_id: upvote_note('Notes', up_count_display,
+                                                                                     down_count_display, id))
+            display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+            display_upvote_count.pack(side=BOTTOM)
+        else:
+            display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                              text_color='#1f61a5')
+            display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                            text_color='#1f61a5')
+            display_downvote_icon = CTkLabel(master=downvote_frame, width=40, height=40, text='',
+                                             image=downvote_view_img)
+            display_downvote_icon.pack(side=TOP, pady=(5, 0), padx=5)
+            display_downvote_count.pack(side=BOTTOM)
+
+            display_upvote_icon = CTkLabel(master=upvote_frame, width=40, height=40, text='', image=upvote_view_img)
+            display_upvote_icon.pack(side=TOP, pady=(5, 0), padx=5)
+            display_upvote_count.pack(side=BOTTOM)
+
     for name in notes_file_names_student:
         display_name = name.replace("Notes/" + current_search_dir + "Student/", "")
         parent_frame = student_pdf_display
         try:
             note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Notes', 'Student',
-                                                                                    display_name)
-        except:
-            continue
-        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
-        frame.pack(fill='x', pady=5)
-        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
-        title_frame.pack(side=LEFT, pady=5, padx=5)
-        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
-                                               text_color='#1f61a5')
-        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
-        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
-                                         text_color='#1f61a5')
-        display_title.pack(side=TOP, padx=5, anchor=W)
-        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
-        download_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                                    command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Notes',id, count_frame))
-        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
-        display_download_count.pack(side=BOTTOM)
-        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
-        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
-        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
-                                                text_color='#1f61a5')
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img, command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count, id=note_id:downvote_note('Notes', up_count_display, down_count_display, id))
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count.pack(side=BOTTOM)
-
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                                  command=lambda down_count_display=display_downvote_count,up_count_display=display_upvote_count,id=note_id: upvote_note('Notes', up_count_display, down_count_display, id))
-        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count.pack(side=BOTTOM)
-    for name in qb_file_names_teacher:
-        display_name = name.replace("Question Banks/" + current_search_dir + "Teacher/", "")
-        parent_frame = teacher_qb_display
-        try:
-            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks', 'Teacher',
                                                                                                   display_name)
         except:
             continue
@@ -1419,7 +1450,10 @@ def display_note_menu():
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Question Banks',id, count_frame))
+                                            command=lambda n=name, id=note_id,
+                                                           count_frame=display_download_count: download_pdf(n, 'Notes',
+                                                                                                            id,
+                                                                                                            count_frame))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
@@ -1433,7 +1467,7 @@ def display_note_menu():
         display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
                                             command=lambda down_count_display=display_downvote_count,
                                                            up_count_display=display_upvote_count,
-                                                           id=note_id: downvote_note('Question Banks', up_count_display,
+                                                           id=note_id: downvote_note('Notes', up_count_display,
                                                                                      down_count_display, id))
         display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_downvote_count.pack(side=BOTTOM)
@@ -1441,9 +1475,78 @@ def display_note_menu():
         display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
                                           command=lambda down_count_display=display_downvote_count,
                                                          up_count_display=display_upvote_count, id=note_id: upvote_note(
-                                              'Question Banks', up_count_display, down_count_display, id))
+                                              'Notes', up_count_display, down_count_display, id))
         display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
         display_upvote_count.pack(side=BOTTOM)
+    for name in qb_file_names_teacher:
+        display_name = name.replace("Question Banks/" + current_search_dir + "Teacher/", "")
+        parent_frame = teacher_qb_display
+        try:
+            note_upvotes, note_downvotes, note_downloads, note_uploader, note_id = get_note_value('Question Banks',
+                                                                                                  'Teacher',
+                                                                                                  display_name)
+        except:
+            continue
+        frame = CTkFrame(master=parent_frame, height=100, fg_color='#fafafa')
+        frame.pack(fill='x', pady=5)
+        title_frame = CTkFrame(master=frame, fg_color='#fafafa')
+        title_frame.pack(side=LEFT, pady=5, padx=5)
+        uploader_name_title = CTkLabel(master=title_frame, text=str(note_uploader), font=("Arial Bold", 10),
+                                       text_color='#1f61a5')
+        uploader_name_title.pack(side=TOP, padx=5, anchor=W)
+        display_title = CTkLabel(master=title_frame, text=display_name, fg_color='transparent', font=("Arial Bold", 14),
+                                 text_color='#1f61a5')
+        display_title.pack(side=TOP, padx=5, anchor=W)
+        download_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        download_frame.pack(side=RIGHT, pady=5, padx=5)
+        display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
+                                          text_color='#1f61a5')
+        display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
+                                            command=lambda n=name, id=note_id,
+                                                           count_frame=display_download_count: download_pdf(n,
+                                                                                                            'Question Banks',
+                                                                                                            id,
+                                                                                                            count_frame))
+        display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
+        display_download_count.pack(side=BOTTOM)
+        downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        downvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
+        upvote_frame.pack(side=RIGHT, pady=5, padx=5)
+        if current_user_type == 'Teacher':
+            display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                              text_color='#1f61a5')
+            display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                            text_color='#1f61a5')
+            display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                                command=lambda down_count_display=display_downvote_count,
+                                                               up_count_display=display_upvote_count,
+                                                               id=note_id: downvote_note('Question Banks',
+                                                                                         up_count_display,
+                                                                                         down_count_display, id))
+            display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+            display_downvote_count.pack(side=BOTTOM)
+
+            display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                              command=lambda down_count_display=display_downvote_count,
+                                                             up_count_display=display_upvote_count,
+                                                             id=note_id: upvote_note(
+                                                  'Question Banks', up_count_display, down_count_display, id))
+            display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+            display_upvote_count.pack(side=BOTTOM)
+        else:
+            display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                              text_color='#1f61a5')
+            display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                            text_color='#1f61a5')
+            display_downvote_icon = CTkLabel(master=downvote_frame, width=40, height=40, text='',
+                                             image=downvote_view_img)
+            display_downvote_icon.pack(side=TOP, pady=(5, 0), padx=5)
+            display_downvote_count.pack(side=BOTTOM)
+
+            display_upvote_icon = CTkLabel(master=upvote_frame, width=40, height=40, text='', image=upvote_view_img)
+            display_upvote_icon.pack(side=TOP, pady=(5, 0), padx=5)
+            display_upvote_count.pack(side=BOTTOM)
     for name in qb_file_names_student:
         display_name = name.replace("Question Banks/" + current_search_dir + "Student/", "")
         parent_frame = student_qb_display
@@ -1468,7 +1571,11 @@ def display_note_menu():
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name,id=note_id,count_frame = display_download_count: download_pdf(n,'Question Banks',id, count_frame))
+                                            command=lambda n=name, id=note_id,
+                                                           count_frame=display_download_count: download_pdf(n,
+                                                                                                            'Question Banks',
+                                                                                                            id,
+                                                                                                            count_frame))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
@@ -1517,31 +1624,49 @@ def display_note_menu():
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_video(n))
+                                            command=lambda n=name, id=note_id,
+                                                           count_frame=display_download_count: download_pdf(n, 'Videos',
+                                                                                                            id,
+                                                                                                            count_frame))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         downvote_frame.pack(side=RIGHT, pady=5, padx=5)
         upvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
         upvote_frame.pack(side=RIGHT, pady=5, padx=5)
-        display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
-                                          text_color='#1f61a5')
-        display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
-                                        text_color='#1f61a5')
-        display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
-                                            command=lambda down_count_display=display_downvote_count,
-                                                           up_count_display=display_upvote_count,
-                                                           id=note_id: downvote_note('Videos', up_count_display,
-                                                                                     down_count_display, id))
-        display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_downvote_count.pack(side=BOTTOM)
+        if current_user_type == 'Teacher':
+            display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                              text_color='#1f61a5')
+            display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                            text_color='#1f61a5')
+            display_downvote_button = CTkButton(master=downvote_frame, width=40, height=40, text='', image=downvote_img,
+                                                command=lambda down_count_display=display_downvote_count,
+                                                               up_count_display=display_upvote_count,
+                                                               id=note_id: downvote_note('Videos', up_count_display,
+                                                                                         down_count_display, id))
+            display_downvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+            display_downvote_count.pack(side=BOTTOM)
 
-        display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
-                                          command=lambda down_count_display=display_downvote_count,
-                                                         up_count_display=display_upvote_count, id=note_id: upvote_note(
-                                              'Videos', up_count_display, down_count_display, id))
-        display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
-        display_upvote_count.pack(side=BOTTOM)
+            display_upvote_button = CTkButton(master=upvote_frame, width=40, height=40, text='', image=upvote_img,
+                                              command=lambda down_count_display=display_downvote_count,
+                                                             up_count_display=display_upvote_count,
+                                                             id=note_id: upvote_note('Videos', up_count_display,
+                                                                                     down_count_display, id))
+            display_upvote_button.pack(side=TOP, pady=(5, 0), padx=5)
+            display_upvote_count.pack(side=BOTTOM)
+        else:
+            display_downvote_count = CTkLabel(master=downvote_frame, text=str(note_downvotes), font=("Arial Bold", 14),
+                                              text_color='#1f61a5')
+            display_upvote_count = CTkLabel(master=upvote_frame, text=str(note_upvotes), font=("Arial Bold", 14),
+                                            text_color='#1f61a5')
+            display_downvote_icon = CTkLabel(master=downvote_frame, width=40, height=40, text='',
+                                             image=downvote_view_img)
+            display_downvote_icon.pack(side=TOP, pady=(5, 0), padx=5)
+            display_downvote_count.pack(side=BOTTOM)
+
+            display_upvote_icon = CTkLabel(master=upvote_frame, width=40, height=40, text='', image=upvote_view_img)
+            display_upvote_icon.pack(side=TOP, pady=(5, 0), padx=5)
+            display_upvote_count.pack(side=BOTTOM)
     for name in videos_file_names_student:
         display_name = name.replace("Videos/" + current_search_dir + "Student/", "")
         parent_frame = student_video_display
@@ -1566,7 +1691,10 @@ def display_note_menu():
         display_download_count = CTkLabel(master=download_frame, text=str(note_downloads), font=("Arial Bold", 14),
                                           text_color='#1f61a5')
         display_download_button = CTkButton(master=download_frame, width=40, height=40, text='', image=download_img,
-                                            command=lambda n=name: download_video(n))
+                                            command=lambda n=name, id=note_id,
+                                                           count_frame=display_download_count: download_pdf(n, 'Videos',
+                                                                                                            id,
+                                                                                                            count_frame))
         display_download_button.pack(pady=(5, 0), padx=5, side=TOP)
         display_download_count.pack(side=BOTTOM)
         downvote_frame = CTkFrame(master=frame, fg_color='#ffffff')
@@ -1607,7 +1735,6 @@ def search_subjects():
     global notes_file_names_student
     global qb_file_names_student
     global videos_file_names_student
-
 
     course = notes_search_course_box.get()
     branch = notes_search_branch_box.get()
@@ -1729,11 +1856,11 @@ current_user_title = CTkLabel(master=top_menu, font=("Arial Bold", 14), text_col
 current_user_title.pack(side='left', padx=20)
 
 # Buttons menu
-main_menu_title = CTkLabel(master=main_menu, text="Choose Tab",font=("Arial Bold", 16),text_color='#1f61a5')
+main_menu_title = CTkLabel(master=main_menu, text="Choose Tab", font=("Arial Bold", 16), text_color='#1f61a5')
 main_menu_title.pack()
 
-buttons_menu = CTkFrame(master=main_menu,fg_color='#ffffff')
-buttons_menu.pack(pady=(0,20))
+buttons_menu = CTkFrame(master=main_menu, fg_color='#ffffff')
+buttons_menu.pack(pady=(0, 20))
 
 notes_button = CTkButton(master=buttons_menu, corner_radius=25, text='Notes', font=("Arial Bold", 12),
                          command=lambda: show_tabs('Notes'))
@@ -1747,28 +1874,33 @@ profile_button.pack(pady=20, padx=15)
 approve_button = CTkButton(master=buttons_menu, corner_radius=25, text='Approve', font=("Arial Bold", 12),
                            command=lambda: show_tabs('Approve'))
 create_user_button = CTkButton(master=buttons_menu, corner_radius=25, text='Create User', font=("Arial Bold", 12),
-                           command=lambda: show_tabs('Create User'))
+                               command=lambda: show_tabs('Create User'))
 
-#Tabs Buttons
-menu_tab_button_frame = CTkFrame(master=logged_in_menu_container,fg_color='#e7e7f4')
-notes_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Notes',font=("Arial Bold", 12), command=lambda: show_tabs('Notes'))
-notes_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-qna_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Q & A',font=("Arial Bold", 12), command=lambda: show_tabs('Q & A'))
-qna_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-profile_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Profile',font=("Arial Bold", 12), command=lambda: show_tabs('Profile'))
-profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-create_user_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Create User',font=("Arial Bold", 12), command=lambda: show_tabs('Create User'))
-approve_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20,text='Approve',font=("Arial Bold", 12), command=lambda: show_tabs('Approve'))
+# Tabs Buttons
+menu_tab_button_frame = CTkFrame(master=logged_in_menu_container, fg_color='#e7e7f4')
+notes_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20, text='Notes', font=("Arial Bold", 12),
+                             command=lambda: show_tabs('Notes'))
+notes_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+qna_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20, text='Q & A', font=("Arial Bold", 12),
+                           command=lambda: show_tabs('Q & A'))
+qna_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+profile_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20, text='Profile', font=("Arial Bold", 12),
+                               command=lambda: show_tabs('Profile'))
+profile_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+create_user_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20, text='Create User',
+                                   font=("Arial Bold", 12), command=lambda: show_tabs('Create User'))
+approve_tab_button = CTkButton(master=menu_tab_button_frame, corner_radius=20, text='Approve', font=("Arial Bold", 12),
+                               command=lambda: show_tabs('Approve'))
 # Tabs
 menu_tabs = CTkFrame(master=logged_in_menu_container, fg_color='#e7e7f4')
 
-
 # Notes tab
-notes_tab_frame = CTkFrame(master=menu_tabs,fg_color='#e7e7f4')
+notes_tab_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
 
 notes_filter_menu_frame = CTkFrame(master=notes_tab_frame, width=200, border_color='#484b6a', fg_color='#ffffff')
 notes_filter_menu_frame.pack(side='left', fill='y', padx=10)
-notes_upload_menu_frame_container = CTkFrame(master=notes_tab_frame, width=200, border_color='#484b6a', fg_color='#ffffff')
+notes_upload_menu_frame_container = CTkFrame(master=notes_tab_frame, width=200, border_color='#484b6a',
+                                             fg_color='#ffffff')
 notes_upload_menu_frame = CTkScrollableFrame(master=notes_upload_menu_frame_container, fg_color='#ffffff')
 notes_upload_menu_frame.pack(expand=True, fill='both')
 
@@ -1933,7 +2065,6 @@ notes_upload_button.pack(pady=10)
 notes_upload_error_label = CTkLabel(master=notes_upload_menu_frame, text='', text_color="#FF0000")
 notes_upload_error_label.pack()
 
-
 # qna_tab
 
 qna_display_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
@@ -1978,56 +2109,68 @@ for i in dict_ids:
     b = CTkButton(master=scrolling_frame_1)
     r = r + 1
 
-
 # user profile
 
 user_profile_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
-user_profile_title = CTkLabel(master=user_profile_frame,font=("Arial Bold", 20),text_color='#1f61a5',text='User Profile')
+user_profile_title = CTkLabel(master=user_profile_frame, font=("Arial Bold", 20), text_color='#1f61a5',
+                              text='User Profile')
 user_profile_title.pack()
 profile_top_frame = CTkFrame(master=user_profile_frame, fg_color='#ffffff')
-profile_top_frame.pack(fill='x',padx=10,pady=10)
-profile_top_left_frame = CTkFrame(master=profile_top_frame,fg_color='#ffffff')
-profile_top_left_frame.pack(side=LEFT,expand=True,fill='both',padx=10,pady=10)
-profile_top_right_frame = CTkFrame(master=profile_top_frame,fg_color='#ffffff')
-profile_top_right_frame.pack(side=RIGHT,expand=True,fill='both',padx=10,pady=10)
-username_label = CTkLabel(master=profile_top_left_frame,text=f"Username : ",font=("Arial Bold", 16),text_color='#1f61a5')
+profile_top_frame.pack(fill='x', padx=10, pady=10)
+profile_top_left_frame = CTkFrame(master=profile_top_frame, fg_color='#ffffff')
+profile_top_left_frame.pack(side=LEFT, expand=True, fill='both', padx=10, pady=10)
+profile_top_right_frame = CTkFrame(master=profile_top_frame, fg_color='#ffffff')
+profile_top_right_frame.pack(side=RIGHT, expand=True, fill='both', padx=10, pady=10)
+username_label = CTkLabel(master=profile_top_left_frame, text=f"Username : ", font=("Arial Bold", 16),
+                          text_color='#1f61a5')
 username_label.pack(anchor=NW)
-change_password_button = CTkButton(master=profile_top_left_frame, text="change password", font=("Arial Bold", 14),command=lambda:change_password_menu_toggle())
-change_password_button.pack(anchor=NW,pady=(0,5))
-change_profile_pic_button = CTkButton(master=profile_top_left_frame, text="change profile picture", font=("Arial Bold", 14),command=lambda:loggedin_profile.setProfileImage(profile_image_label))
-change_profile_pic_button.pack(anchor=NW,pady=(0,5))
-profile_image_label = CTkLabel(master=profile_top_right_frame,text="")
+change_password_button = CTkButton(master=profile_top_left_frame, text="change password", font=("Arial Bold", 14),
+                                   command=lambda: change_password_menu_toggle())
+change_password_button.pack(anchor=NW, pady=(0, 5))
+change_profile_pic_button = CTkButton(master=profile_top_left_frame, text="change profile picture",
+                                      font=("Arial Bold", 14),
+                                      command=lambda: loggedin_profile.setProfileImage(profile_image_label))
+change_profile_pic_button.pack(anchor=NW, pady=(0, 5))
+profile_image_label = CTkLabel(master=profile_top_right_frame, text="")
 profile_image_label.pack()
-change_password_menu_frame = CTkFrame(master=profile_top_left_frame,fg_color='#e7e7f4')
-change_password_title = CTkLabel(master=change_password_menu_frame,text='Change Password',font=("Arial Bold", 16),text_color='#1f61a5')
-change_password_title.pack(pady=10,padx=10)
-change_password_entry = CTkEntry(master=change_password_menu_frame,corner_radius=25, width=225, fg_color="#EEEEEE", border_color="#1f61a5",
-                    border_width=1,
-                    text_color="#000000")
-change_password_entry.pack(pady=(0,10),padx=10)
-change_password_menu_button = CTkButton(master=change_password_menu_frame,text='Confirm',font=("Arial Bold", 14),command=lambda:loggedin_profile.changePassword(change_password_entry,change_password_menu_error_label))
-change_password_menu_button.pack(pady=(0,10),padx=10)
-change_password_menu_error_label = CTkLabel(master=change_password_menu_frame,text='',font=("Arial Bold", 10),text_color="#FF0000")
+change_password_menu_frame = CTkFrame(master=profile_top_left_frame, fg_color='#e7e7f4')
+change_password_title = CTkLabel(master=change_password_menu_frame, text='Change Password', font=("Arial Bold", 16),
+                                 text_color='#1f61a5')
+change_password_title.pack(pady=10, padx=10)
+change_password_entry = CTkEntry(master=change_password_menu_frame, corner_radius=25, width=225, fg_color="#EEEEEE",
+                                 border_color="#1f61a5",
+                                 border_width=1,
+                                 text_color="#000000")
+change_password_entry.pack(pady=(0, 10), padx=10)
+change_password_menu_button = CTkButton(master=change_password_menu_frame, text='Confirm', font=("Arial Bold", 14),
+                                        command=lambda: loggedin_profile.changePassword(change_password_entry,
+                                                                                        change_password_menu_error_label))
+change_password_menu_button.pack(pady=(0, 10), padx=10)
+change_password_menu_error_label = CTkLabel(master=change_password_menu_frame, text='', font=("Arial Bold", 10),
+                                            text_color="#FF0000")
 change_password_menu_error_label.pack()
 
 profile_bottom_frame = CTkFrame(master=user_profile_frame, fg_color='#ffffff')
-profile_bottom_frame.pack(padx=10,pady=10,fill='both',expand=True)
+profile_bottom_frame.pack(padx=10, pady=10, fill='both', expand=True)
 profile_uploaded_menu_frame = CTkScrollableFrame(master=profile_bottom_frame, fg_color='#ffffff')
-profile_uploaded_menu_frame.pack(padx=10,pady=10,fill='both',expand=True)
-profile_uploaded_notes_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Notes', font=("Arial Bold", 16),text_color='#1f61a5')
+profile_uploaded_menu_frame.pack(padx=10, pady=10, fill='both', expand=True)
+profile_uploaded_notes_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Notes',
+                                        font=("Arial Bold", 16), text_color='#1f61a5')
 profile_uploaded_notes_title.pack()
 profile_uploaded_notes_display_frame = CTkScrollableFrame(master=profile_uploaded_menu_frame)
 profile_uploaded_notes_display_frame.pack(fill='x')
-profile_uploaded_qb_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Question Banks', font=("Arial Bold", 16),text_color='#1f61a5')
+profile_uploaded_qb_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Question Banks',
+                                     font=("Arial Bold", 16), text_color='#1f61a5')
 profile_uploaded_qb_title.pack()
 profile_uploaded_qb_display_frame = CTkScrollableFrame(master=profile_uploaded_menu_frame)
 profile_uploaded_qb_display_frame.pack(fill='x')
-profile_uploaded_videos_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Videos', font=("Arial Bold", 16),text_color='#1f61a5')
+profile_uploaded_videos_title = CTkLabel(master=profile_uploaded_menu_frame, text='Uploaded Videos',
+                                         font=("Arial Bold", 16), text_color='#1f61a5')
 profile_uploaded_videos_title.pack()
 profile_uploaded_videos_display_frame = CTkScrollableFrame(master=profile_uploaded_menu_frame)
 profile_uploaded_videos_display_frame.pack(fill='x')
 
-#Create User Tab
+# Create User Tab
 signup_tab_frame = CTkFrame(master=menu_tabs)
 signup_page = CTkFrame(master=signup_tab_frame, fg_color='#e7e7f4')
 signup_page.pack(expand=True, fill='both')
@@ -2091,7 +2234,7 @@ signup_button = CTkButton(master=signup_login_frame, text="Create User", fg_colo
 signup_button.pack(anchor="w", pady=(20, 0), padx=(25, 0))
 
 
-def approval_notes(pdf_path, approved, course, branch, year, subject, module, file_name):
+def approval_notes(pdf_path, approved, course, branch, year, subject, module, file_name, note_type):
     if approved == 1:
         try:
             storage_client = storage.bucket()
@@ -2099,7 +2242,7 @@ def approval_notes(pdf_path, approved, course, branch, year, subject, module, fi
             local_path = tempfile.mktemp(suffix=".pdf")
             source_blob.download_to_filename(local_path)
             destination_blob = storage_client.blob(
-                f"Notes/{course}/{branch}/{year}/{subject}/{module}/Teacher/{file_name}")
+                f"{note_type}/{course}/{branch}/{year}/{subject}/{module}/Teacher/{file_name}")
             destination_blob.upload_from_filename(local_path)
             os.remove(local_path)
             source_blob.delete()
@@ -2120,10 +2263,13 @@ def approval_notes(pdf_path, approved, course, branch, year, subject, module, fi
             display_approval_notes()
         except Exception as e:
             print("Error:", e)
+
+
 def list_approval_notes():
     global notes_for_approval
     folder = bucket.list_blobs(prefix='ForApproval/')
     notes_for_approval = [blob.name for blob in folder if blob.name.endswith('/') == False]
+
 
 def display_approval_notes():
     for frame in approval_file_frame.winfo_children():
@@ -2131,38 +2277,49 @@ def display_approval_notes():
     for note in notes_for_approval:
         note_list = note.split('/')
         display_name = note_list[-1]
-        course = note_list[1]
-        branch = note_list[2]
-        year = note_list[3]
-        subject= note_list[4]
-        module= note_list[5]
+        note_type = note_list[1]
+        course = note_list[2]
+        branch = note_list[3]
+        year = note_list[4]
+        subject = note_list[5]
+        module = note_list[6]
+
         file_details = f"{subject} : Module - {module}"
         frame = CTkFrame(master=approval_file_frame, fg_color='#ffffff')
         frame.pack(fill='x', padx=10, pady=10)
         text_frame = CTkFrame(master=frame, fg_color='#ffffff')
         text_frame.pack(side=LEFT, padx=10, pady=10)
-        title = CTkLabel(master=text_frame, text=display_name, font=("Arial Bold", 18), text_color='#1f61a5')
+        title = CTkLabel(master=text_frame, text=f"{display_name} ({note_type})", font=("Arial Bold", 18),
+                         text_color='#1f61a5')
         title.pack(anchor=NW, side=TOP)
         link = CTkLabel(master=text_frame, text=file_details, font=("Arial Bold", 12))
         link.pack(anchor=NW, side=BOTTOM)
-        approve_button = CTkButton(master=frame, text='Approve', font=("ArialBold", 12), command=lambda n=note,c=course,b=branch,y=year,s=subject,m=module,dn=display_name:approval_notes(n,1,c,b,y,s,m,dn))
+        approve_button = CTkButton(master=frame, text='Approve', font=("ArialBold", 12),
+                                   command=lambda t=note_type, n=note, c=course, b=branch, y=year, s=subject, m=module,
+                                                  dn=display_name: approval_notes(n, 1, c, b, y, s, m, dn, t))
         approve_button.pack(side=RIGHT, padx=(5, 10), pady=10)
         reject_button = CTkButton(master=frame, text='', font=("ArialBold", 12), fg_color='#de1313',
-                                  hover_color='#bd0a0a', width=40, height=40, image=delete_img, command=lambda n=note,c=course,b=branch,y=year,s=subject,m=module,dn=display_name:approval_notes(n,1,c,b,y,s,m,dn))
+                                  hover_color='#bd0a0a', width=40, height=40, image=delete_img,
+                                  command=lambda t=note_type, n=note, c=course, b=branch, y=year, s=subject, m=module,
+                                                 dn=display_name: approval_notes(n, 1, c, b, y, s, m, dn, t))
         reject_button.pack(side=RIGHT, padx=5, pady=10)
+        download_button = CTkButton(master=frame, text='', font=("ArialBold", 12), width=40, height=40,
+                                    image=download_img, command=lambda n=note, t=note_type: download_pdf_approval(n, t))
+        download_button.pack(side=RIGHT, padx=5, pady=10)
+
 
 # approval tab
 
 approval_tab_frame = CTkFrame(master=menu_tabs, fg_color='#e7e7f4')
 
 approval_frame = CTkFrame(master=approval_tab_frame, fg_color='#ffffff')
-approval_frame.pack(expand=True,fill='both',padx=10,pady=10)
+approval_frame.pack(expand=True, fill='both', padx=10, pady=10)
 
-approval_title = CTkLabel(master=approval_frame,text='Approve', font=("Arial Bold", 24), text_color='#1f61a5')
-approval_title.pack(side=TOP,pady=10)
+approval_title = CTkLabel(master=approval_frame, text='Approve', font=("Arial Bold", 24), text_color='#1f61a5')
+approval_title.pack(side=TOP, pady=10)
 
-approval_file_frame = CTkScrollableFrame(master=approval_frame,fg_color='#e1e1f0')
-approval_file_frame.pack(expand=True,fill='both',padx=10,pady=10)
+approval_file_frame = CTkScrollableFrame(master=approval_frame, fg_color='#e1e1f0')
+approval_file_frame.pack(expand=True, fill='both', padx=10, pady=10)
 
 
 # user signup
@@ -2170,9 +2327,9 @@ def create_user_tab_check():
     if current_user_type == 'Admin':
         for u_frame in menu_tab_button_frame.winfo_children():
             u_frame.pack_forget()
-        profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-        approve_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-        create_user_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        profile_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+        approve_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+        create_user_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
         for u_frame in buttons_menu.winfo_children():
             u_frame.pack_forget()
         profile_button.pack(pady=20, padx=15)
@@ -2182,9 +2339,9 @@ def create_user_tab_check():
     else:
         for u_frame in menu_tab_button_frame.winfo_children():
             u_frame.pack_forget()
-        notes_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-        qna_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
-        profile_tab_button.pack(expand=True,side=LEFT,padx=5,pady=5)
+        notes_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+        qna_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
+        profile_tab_button.pack(expand=True, side=LEFT, padx=5, pady=5)
         for u_frame in buttons_menu.winfo_children():
             u_frame.pack_forget()
         notes_button.pack(pady=20, padx=15)
